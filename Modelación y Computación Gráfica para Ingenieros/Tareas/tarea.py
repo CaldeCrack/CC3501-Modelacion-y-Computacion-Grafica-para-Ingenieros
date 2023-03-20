@@ -32,18 +32,21 @@ def draw_star(posX, sl, batch=None):
     sl.append(star)
 
 shape_list = []
-draw_star(200, shape_list, batch=batch)
+star_list = []
 draw_ship(400,300, shape_list, batch=batch) # leader
 draw_ship(400,100, shape_list, batch=batch) # back
 draw_ship(250,200, shape_list, batch=batch) # left back 1
 draw_ship(100,150, shape_list, batch=batch) # left back 2
 draw_ship(550,200, shape_list, batch=batch) # right back 1
 draw_ship(700,150, shape_list, batch=batch) # right back 2
+draw_star(200, star_list, batch=batch)
 
 # Window draw
 @window.event
 def on_draw():
-    shape_list[0].y-=3
+    # potentially move stars here
+    # star_list[0].y-=3
+    # star_list[0].rotation+=1
     window.clear()
     batch.draw()
 
