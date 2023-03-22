@@ -1,0 +1,2 @@
+use this in the powershell terminal opened in the correct folder to activate the enviroment: graf\Scripts\Activate.ps1
+use this in the powershell terminal opened in the correct folder to deactivate the enviroment: desactivate

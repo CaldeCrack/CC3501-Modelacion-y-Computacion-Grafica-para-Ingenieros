@@ -1,52 +1,91 @@
-import pyglet
-import random
-from pyglet import shapes
+import pyglet, random, math
+from pyglet import clock, shapes
 
-# use this in the powershell terminal opened in the correct folder to activate the enviroment: graf\Scripts\Activate.ps1
-white = (255,255,255)
-light_grey = (150,150,150)
-blue = (50, 50, 180)
+# Variables
+white, light_grey, blue, red, orange = (255,255,255), (100,100,100), (50, 50, 180), (250, 25, 25), (250, 110, 40)
+bg = pyglet.graphics.Group(order=-1)
 
 # Window initialization
-window = pyglet.window.Window(800, 600, "Spaceships")
+window, batch = pyglet.window.Window(800, 600, "Spaceships"), pyglet.graphics.Batch()
 pyglet.gl.glClearColor(0, 0, 0.05, 1)
-batch = pyglet.graphics.Batch()
 
+# Useful functions
 def draw_ship(posX, posY, sl, batch=None):
-    # inferior , superior, lateral
-    right_central_triangle = shapes.Triangle(posX+2, posY-50, posX+2, posY+50, posX+25, posY-15, color=light_grey, batch=batch)
+    #Red Fire
+    red_left = shapes.Triangle(posX-40, posY-20, posX-10, posY-20, posX-25, posY-80, color=red, batch=batch)
+    clock.schedule_interval(fire, 0.3, red_left, posY-80)
+    sl.append(red_left)
+    red_right = shapes.Triangle(posX+40, posY-20, posX+10, posY-20, posX+25, posY-80, color=red, batch=batch)
+    clock.schedule_interval(fire, 0.3, red_right, posY-80)
+    sl.append(red_right)
+    # Orange Fire
+    orange_left = shapes.Triangle(posX-32, posY-20, posX-18, posY-20, posX-25, posY-90, color=orange, batch=batch)
+    clock.schedule_interval(fire, 0.3, orange_left, posY-90)
+    sl.append(orange_left)
+    orange_right = shapes.Triangle(posX+32, posY-20, posX+18, posY-20, posX+25, posY-90, color=orange, batch=batch)
+    clock.schedule_interval(fire, 0.3, orange_right, posY-90)
+    sl.append(orange_right)
+    # Central triangles
+    right_central_triangle = shapes.Triangle(posX+1, posY-50, posX+1, posY+50, posX+25, posY-15, color=light_grey, batch=batch)
     sl.append(right_central_triangle)
-    left_central_triangle = shapes.Triangle(posX-2, posY-50, posX-2, posY+50, posX-25, posY-15, color=light_grey, batch=batch)
+    left_central_triangle = shapes.Triangle(posX-1, posY-50, posX-1, posY+50, posX-25, posY-15, color=light_grey, batch=batch)
     sl.append(left_central_triangle)
+    #Middle triangles
     right_right = shapes.Triangle(posX+70, posY-70, posX+35, posY-10, posX+15, posY-20, color=light_grey, batch=batch)
     sl.append(right_right)
     left_left = shapes.Triangle(posX-70, posY-70, posX-35, posY-10, posX-15, posY-20, color=light_grey, batch=batch)
     sl.append(left_left)
+    # Outer triangles
     right_central = shapes.Triangle(posX+35, posY-70, posX+20, posY+25, posX+15, posY-30, color=blue, batch=batch)
     sl.append(right_central)
     left_central = shapes.Triangle(posX-35, posY-70, posX-20, posY+25, posX-15, posY-30, color=blue, batch=batch)
     sl.append(left_central)
 
-def draw_star(posX, sl, batch=None):
-    star = shapes.Star(posX,630,10,4,5,color=white,batch=batch)
+def generate_stars(dt, sl, batch):
+    pos, rot = random.randint(-11,811), random.random()*2*math.pi*(-1)**random.randint(0,1)
+    draw_star(dt, pos, rot, sl, batch)
+
+def draw_star(dt, posX, rot, sl, batch=None):
+    outr, intr, spikes, vel = random.randint(8,12), random.randint(3,5), random.randint(4,5), random.randint(200,400)
+    star = shapes.Star(posX,630,outr,intr,spikes,color=white,batch=batch, group=bg)
+    clock.schedule(move, vel, rot, star)
     sl.append(star)
 
-shape_list = []
+def move(dt, vel, rot, shape):
+    shape.y-=dt*vel
+    shape.rotation+=dt*rot*30
+
+def fire(dt, fire, y):
+    real_y=0
+    if fire.y3 in [90,100]: real_y=15
+    elif fire.y3 in [190,200]: real_y=115
+    elif fire.y3 in [290,300]: real_y=165
+    elif fire.y3 in [490, 500]: real_y=215
+    if real_y >= y-5:
+        fire.y3=y+20
+        real_y+=20
+    else:
+        fire.y3=y
+        real_y-=20
+
+# Generate multiple stars
 star_list = []
-draw_ship(400,300, shape_list, batch=batch) # leader
-draw_ship(400,100, shape_list, batch=batch) # back
-draw_ship(250,200, shape_list, batch=batch) # left back 1
-draw_ship(100,150, shape_list, batch=batch) # left back 2
-draw_ship(550,200, shape_list, batch=batch) # right back 1
-draw_ship(700,150, shape_list, batch=batch) # right back 2
-draw_star(200, star_list, batch=batch)
+clock.schedule_interval(generate_stars, 0.2, star_list, batch)
+clock.schedule_interval(generate_stars, 0.35, star_list, batch)
+clock.schedule_interval(generate_stars, 0.5, star_list, batch)
+
+# Draw spaceships
+shape_list = []
+draw_ship(400,300, shape_list, batch=batch) # leader (490 500)
+draw_ship(400,100, shape_list, batch=batch) # back (90 100)
+draw_ship(250,200, shape_list, batch=batch) # left back 1 (290 300)
+draw_ship(100,150, shape_list, batch=batch) # left back 2 (190 200)
+draw_ship(550,200, shape_list, batch=batch) # right back 1 (290 300)
+draw_ship(700,150, shape_list, batch=batch) # right back 2 (190 200)
 
 # Window draw
 @window.event
 def on_draw():
-    # potentially move stars here
-    # star_list[0].y-=3
-    # star_list[0].rotation+=1
     window.clear()
     batch.draw()
 
