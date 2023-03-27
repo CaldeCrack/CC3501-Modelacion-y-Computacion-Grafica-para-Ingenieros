@@ -1,8 +1,8 @@
 import pyglet, random, math
 from pyglet import clock, shapes
 
-# Variables
-white, light_grey, blue, red, orange = (255,255,255), (100,100,100), (50, 50, 180), (250, 25, 25), (250, 110, 40)
+# Vars
+moon_white, moon_grey, light_grey, blue, red, orange = (246,241,213), (138,127,141) , (100,100,100), (50, 50, 180), (250, 25, 25), (250, 110, 40)
 bg = pyglet.graphics.Group(order=-1)
 
 # Window initialization
@@ -46,14 +46,17 @@ def generate_stars(dt, sl, batch):
     draw_star(dt, pos, rot, sl, batch)
 
 def draw_star(dt, posX, rot, sl, batch=None):
-    outr, intr, spikes, vel = random.randint(8,12), random.randint(3,5), random.randint(4,5), random.randint(200,400)
-    star = shapes.Star(posX,630,outr,intr,spikes,color=white,batch=batch, group=bg)
-    clock.schedule(move, vel, rot, star)
+    outr, intr, spikes, vel, freq, sign, rc = random.randint(8,12), random.randint(3,5), random.randint(4,5), random.randint(200,300), random.random()*0.03, (-1)**random.randint(0,1), (random.randint(0,255), random.randint(0,255), random.randint(0,255))
+    star = shapes.Star(posX,630,outr,intr,spikes,color=rc,batch=batch,group=bg)
+    clock.schedule(move, vel, rot, star, freq, sign, posX)
     sl.append(star)
 
-def move(dt, vel, rot, shape):
+def move(dt, vel, rot, shape, freq, sign, posX):
+    shape.x=posX+sign*math.sin(time(dt)+shape.y*freq)*3
     shape.y-=dt*vel
     shape.rotation+=dt*rot*30
+    if shape.y <= -15:
+        del shape
 
 def fire(dt, fire, y):
     real_y=0
@@ -68,6 +71,26 @@ def fire(dt, fire, y):
         fire.y3=y
         real_y-=20
 
+def time(dt):
+    time=0
+    time+=dt
+    return time
+
+# Current time on-window
+clock.schedule(time)
+
+# Draw moon
+moon_vel = 23
+sign = (-1)**random.randint(0,1)
+big = shapes.Circle(sign*460+400, 900, 300, color=moon_white, batch=batch, group=bg)
+c1 = shapes.Circle(sign*460+400+50, 1000, 80, color=moon_grey, batch=batch, group=bg)
+c2 = shapes.Circle(sign*460+400-150, 940, 40, color=moon_grey, batch=batch, group=bg)
+c3 = shapes.Circle(sign*460+400+110, 870, 50, color=moon_grey, batch=batch, group=bg)
+c4 = shapes.Circle(sign*460+400-20, 980, 60, color=moon_grey, batch=batch, group=bg)
+c5 = shapes.Circle(sign*460+400-180, 760, 70, color=moon_grey, batch=batch, group=bg)
+c6 = shapes.Circle(sign*460+400+190, 740, 45, color=moon_grey, batch=batch, group=bg)
+c7 = shapes.Circle(sign*460+400, 800, 75, color=moon_grey, batch=batch, group=bg)
+
 # Generate multiple stars
 star_list = []
 clock.schedule_interval(generate_stars, 0.2, star_list, batch)
@@ -76,12 +99,12 @@ clock.schedule_interval(generate_stars, 0.5, star_list, batch)
 
 # Draw spaceships
 shape_list = []
-draw_ship(400,300, shape_list, batch=batch) # leader (490 500)
-draw_ship(400,100, shape_list, batch=batch) # back (90 100)
-draw_ship(250,200, shape_list, batch=batch) # left back 1 (290 300)
-draw_ship(100,150, shape_list, batch=batch) # left back 2 (190 200)
-draw_ship(550,200, shape_list, batch=batch) # right back 1 (290 300)
-draw_ship(700,150, shape_list, batch=batch) # right back 2 (190 200)
+draw_ship(400,300, shape_list, batch=batch) # leader
+draw_ship(400,100, shape_list, batch=batch) # back
+draw_ship(250,200, shape_list, batch=batch) # left back 1
+draw_ship(100,150, shape_list, batch=batch) # left back 2
+draw_ship(550,200, shape_list, batch=batch) # right back 1
+draw_ship(700,150, shape_list, batch=batch) # right back 2
 
 # Window draw
 @window.event
@@ -89,4 +112,15 @@ def on_draw():
     window.clear()
     batch.draw()
 
+def update(dt):
+    big.y-=dt*moon_vel
+    c1.y-=dt*moon_vel
+    c2.y-=dt*moon_vel
+    c3.y-=dt*moon_vel
+    c4.y-=dt*moon_vel
+    c5.y-=dt*moon_vel
+    c6.y-=dt*moon_vel
+    c7.y-=dt*moon_vel
+
+pyglet.clock.schedule_interval(update, 1/60.0)
 pyglet.app.run()
