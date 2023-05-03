@@ -43,14 +43,13 @@ ASSETS = {
 
 class Controller(pyglet.window.Window):
 
-    def __init__(self, width, height, title=f"Pochita :3"):
+    def __init__(self, width, height, title="Pochita :3"):
         super().__init__(width, height, title)
         self.total_time = 0.0
         self.pipeline = sh.SimpleModelViewProjectionShaderProgram()
 
         self.obj_color = (0.7, 0.2, 0.6)
-        self.ex_shape = createGPUShape(self.pipeline,
-                                       read_OBJ(ASSETS["pochita_obj"], self.obj_color))
+        self.ex_shape = createGPUShape(self.pipeline,read_OBJ(ASSETS["pochita_obj"], self.obj_color))
 
 
 
