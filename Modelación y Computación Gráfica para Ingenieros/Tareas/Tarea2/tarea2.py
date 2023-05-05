@@ -5,6 +5,7 @@ import pyglet
 import numpy as np
 import libs.shaders as sh
 import libs.transformations as tr
+import libs.scene_graph as sg
 #! import ship
 
 from libs.gpu_shape import createGPUShape
@@ -35,9 +36,6 @@ class Controller(pyglet.window.Window):
         self.ex_shape.texture = sh.textureSimpleSetup(
             self.current_tex, *self.tex_params
         )
-    
-    #def update(self):
-    #    pass
 
 class Camera:
     def __init__(self, at=np.array([0.0, 0.0, 0.0]), eye=np.array([1.0, 1.0, 1.0]), up=np.array([0.0, 0.0, 1.0])) -> None:
@@ -88,6 +86,9 @@ glClearColor(0.05, 0.05, 0.12, 1.0)
 glEnable(GL_DEPTH_TEST)
 glUseProgram(controller.pipeline.shaderProgram)
 
+pochita = sg.SceneGraphNode("pochita")
+pochita.childs += [controller.ex_shape]
+
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
@@ -133,12 +134,13 @@ def on_draw():
         camera.at,
         camera.up
     )
-    glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "model"), 1, GL_TRUE, tr.rotationX(np.pi/2))
-    glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "model"), 1, GL_TRUE, tr.rotationX(np.pi/2))
+    #glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "model"), 1, GL_TRUE, tr.identity())
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
-
     controller.pipeline.drawCall(controller.ex_shape)
+
+    pochita.transform = tr.translate(3 * np.sin(controller.total_time),0,0.5)
+    sg.drawSceneGraphNode(pochita, controller.pipeline, "model")
 
 def update(dt, controller):
     controller.total_time += dt

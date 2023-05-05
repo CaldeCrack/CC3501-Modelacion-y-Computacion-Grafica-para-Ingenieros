@@ -126,12 +126,11 @@ def on_draw():
     else:
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
-    blueCarNode.transform = np.matmul(tr.rotationZ(-np.pi/4), tr.translate(3.0,0,0.5))
+    blueCarNode.transform = np.matmul(tr.rotationZ(-np.pi/4), tr.translate(3.0,0,0.5)) # primero izquierda luego derecha
 
     # Using the same view and projection matrices in the whole application
     projection = tr.perspective(45, float(WIDTH)/float(HEIGHT), 0.1, 100)
-    glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "projection"), 1, GL_TRUE,
-                       projection)
+    glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "projection"), 1, GL_TRUE, projection)
 
     view = tr.lookAt(
             np.array([5,5,7]),
@@ -141,8 +140,7 @@ def on_draw():
     glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "view"), 1, GL_TRUE, view)
 
     if controller.showAxis:
-        glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "model"), 1, GL_TRUE,
-                           tr.identity())
+        glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "model"), 1, GL_TRUE, tr.identity())
         mvpPipeline.drawCall(gpuAxis, GL_LINES)
 
     # Moving the red car and rotating its wheels
