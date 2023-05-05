@@ -102,7 +102,7 @@ class SimpleModelViewProjectionShaderProgram:
 
         normal = glGetAttribLocation(self.shaderProgram, "normal")
         if normal >= 0:
-            glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 36, ctypes.c_void_p(24))
+            glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
             glEnableVertexAttribArray(normal)
 
         # Unbinding current vao

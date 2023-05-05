@@ -1,6 +1,15 @@
+# coding=utf-8
+"""A convenience class container to reference a shape on GPU memory"""
+
+#import OpenGL.GL as ogl
 from OpenGL.GL import *
 import numpy as np
 
+__author__ = "Daniel Calderon"
+__license__ = "MIT"
+
+# We will use 32 bits data, so floats and integers have 4 bytes
+# 1 byte = 8 bits
 SIZE_IN_BYTES = 4
 
 class GPUShape:
@@ -50,7 +59,7 @@ class GPUShape:
 
         if self.texture != None:
             glDeleteTextures(1, [self.texture])
-
+        
         if self.ebo != None:
             glDeleteBuffers(1, [self.ebo])
 
