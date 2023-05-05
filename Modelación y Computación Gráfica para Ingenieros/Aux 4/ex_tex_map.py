@@ -1,4 +1,6 @@
 # coding=utf-8
+"""Showing how to handle textures on a square"""
+
 import sys
 import os
 import pyglet
@@ -7,13 +9,43 @@ import numpy as np
 import libs.shaders as sh
 import libs.transformations as tr
 
+from libs.shapes import rubiksCube, minecraftCube
 from libs.gpu_shape import createGPUShape
-from libs.obj_handler import read_OBJ2
 from libs.assets_path import getAssetPath
 
 from OpenGL.GL import *
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+"""
+Controles:
+
+    Cambiar Textura:
+        - 1: Rubik
+        - 2: Tierra Minecraft
+        - 2: Madera Minecraft
+        - 2: Hojas Minecraft
+
+    Cambiar Wrap Modes: (Cicla entre 'REPEAT', 'MIRRORED REPEAT',
+    'CLAMP TO EDGE' y 'MIRRORED CLAMP TO EDGE' en ese orden.)
+        - Z: sWrapMode
+        - X: tWrapMode
+
+    Cambiar Filter Modes: (Cicla entre 'NEAREST' y 'LINEAR' en ese orden.)
+        - C: minFilterMode
+        - V: maxFilterMode
+
+    - WASD: Movimiento de camara
+
+    - '+': Zoom-in
+    - '-': Zoom-out
+
+    - R: Reiniciar a los valores por defecto de la textura.
+    Valores por defecto:
+        - sWrapMode = tWrapMode = GL_REPEAT
+        - minFilterMode = maxFilterMode = GL_NEAREST
+
+"""
 
 WIDTH, HEIGHT = 800, 800
 
@@ -21,30 +53,29 @@ PERSPECTIVE_PROJECTION = 0
 ORTOGRAPHIC_PROJECTION = 1
 
 PROJECTIONS = [
-    tr.perspective(100, float(WIDTH)/float(HEIGHT), 0.1, 100),  # PERSPECTIVE_PROJECTION
-    tr.ortho(-6, 6, -6, 6, 0.1, 100)  # ORTOGRAPHIC_PROJECTION
+    tr.perspective(60, float(WIDTH)/float(HEIGHT), 0.1, 100),  # PERSPECTIVE_PROJECTION
+    tr.ortho(-8, 8, -8, 8, 0.1, 100)  # ORTOGRAPHIC_PROJECTION
 ]
-
-ASSETS = {
-    "pochita_obj": getAssetPath("pochita3.obj"),
-    "pochita_tex": getAssetPath("pochita.png"),
-}
-
 
 class Controller(pyglet.window.Window):
 
-    def __init__(self, width, height, title=f"Pochita :3"):
+    def __init__(self, width, height, title=f"3D Texture"):
         super().__init__(width, height, title)
         self.total_time = 0.0
         self.pipeline = sh.SimpleTextureModelViewProjectionShaderProgram()
 
-        self.ex_shape = createGPUShape(self.pipeline, read_OBJ2(ASSETS["pochita_obj"]))
+        self.ex_shape = createGPUShape(self.pipeline, rubiksCube())
 
-        self.tex_params = [GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST]
-        self.current_tex = ASSETS["pochita_tex"]
+        self.tex_params = (GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST)
 
         self.ex_shape.texture = sh.textureSimpleSetup(
-            self.current_tex, *self.tex_params
+            getAssetPath("rubik.png"), *self.tex_params
+        )
+
+    def change_texture(self, cube, tex):
+        self.ex_shape = createGPUShape(self.pipeline, cube)
+        self.ex_shape.texture = sh.textureSimpleSetup(
+            getAssetPath(tex), *self.tex_params
         )
 
 
@@ -56,19 +87,20 @@ class Camera:
         self.eye = eye
         self.up = up
 
-        self.x = np.square(self.eye[0])
-        self.y = np.square(self.eye[1])
-        self.z = np.square(self.eye[2])
+        # Spherical coordinates
+        self.R = np.sqrt(np.square(self.eye[0]) + np.square(self.eye[1]) + np.square(self.eye[2]))
+        self.theta = np.arccos(self.eye[2]/self.R)
+        self.phi = np.arctan(self.eye[1]/self.eye[0])
 
         # Movement/Rotation speed
-        self.x_speed = 0.1
-        self.y_speed = 0.1
-        self.z_speed = 0.1
+        self.phi_speed = 0.1
+        self.theta_speed = 0.1
+        self.R_speed = 0.1
 
         # Movement/Rotation direction
-        self.x_direction = 0
-        self.y_direction = 0
-        self.z_direction = 0
+        self.phi_direction = 0
+        self.theta_direction = 0
+        self.R_direction = 0
 
         # Projections
         self.available_projections = PROJECTIONS
@@ -78,17 +110,14 @@ class Camera:
         self.projection = self.available_projections[projection_name]
 
     def update(self):
-        self.x += self.x_speed * self.x_direction
-        self.y += self.y_speed * self.y_direction
-        self.z += self.z_speed * self.z_direction
+        self.R += self.R_speed * self.R_direction
+        self.theta += self.theta_speed * self.theta_direction
+        self.phi += self.phi_speed * self.phi_direction
 
         # Spherical coordinates
-        self.eye[0] = self.x
-        self.eye[1] = self.y
-        self.eye[2] = self.z
-        self.at[0] = self.x-1
-        self.at[1] = self.y-1
-        self.at[2] = self.z-1
+        self.eye[0] = self.R * np.sin(self.theta) * np.cos(self.phi)
+        self.eye[1] = self.R * np.sin(self.theta) * np.sin(self.phi)
+        self.eye[2] = (self.R) * np.cos(self.theta)
 
 
 camera = Camera()
@@ -96,7 +125,7 @@ controller = Controller(width=WIDTH, height=HEIGHT)
 
 
 # Setting up the clear screen color
-glClearColor(0.1, 0.1, 0.1, 1.0)
+glClearColor(0.15, 0.15, 0.15, 1.0)
 
 glEnable(GL_DEPTH_TEST)
 
@@ -105,22 +134,31 @@ glUseProgram(controller.pipeline.shaderProgram)
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
+    if symbol == pyglet.window.key._1:
+        controller.change_texture(rubiksCube(), "rubik.png")
+    if symbol == pyglet.window.key._2:
+        controller.change_texture(minecraftCube(), "minecraft_dirt.png")
+    if symbol == pyglet.window.key._3:
+        controller.change_texture(minecraftCube(), "minecraft_wood.png")
+    if symbol == pyglet.window.key._4:
+        controller.change_texture(minecraftCube(), "minecraft_leaves.jpg")
+
     if symbol == pyglet.window.key.P:
         camera.set_projection(PERSPECTIVE_PROJECTION)
     if symbol == pyglet.window.key.O:
         camera.set_projection(ORTOGRAPHIC_PROJECTION)
     if symbol == pyglet.window.key.A:
-        camera.x_direction -= 1
+        camera.phi_direction -= 1
     if symbol == pyglet.window.key.D:
-        camera.x_direction += 1
+        camera.phi_direction += 1
     if symbol == pyglet.window.key.W:
-        camera.y_direction -= 1
+        camera.theta_direction -= 1
     if symbol == pyglet.window.key.S:
-        camera.y_direction += 1
+        camera.theta_direction += 1
     if symbol == pyglet.window.key.PLUS:
-        camera.z_direction -= 1
+        camera.R_direction -= 1
     if symbol == pyglet.window.key.MINUS:
-        camera.z_direction += 1
+        camera.R_direction += 1
 
     elif symbol == pyglet.window.key.ESCAPE:
         controller.close()
@@ -129,22 +167,24 @@ def on_key_press(symbol, modifiers):
 @controller.event
 def on_key_release(symbol, modifiers):
     if symbol == pyglet.window.key.A:
-        camera.x_direction += 1
+        camera.phi_direction += 1
     if symbol == pyglet.window.key.D:
-        camera.x_direction -= 1
+        camera.phi_direction -= 1
     if symbol == pyglet.window.key.W:
-        camera.y_direction += 1
+        camera.theta_direction += 1
     if symbol == pyglet.window.key.S:
-        camera.y_direction -= 1
+        camera.theta_direction -= 1
     if symbol == pyglet.window.key.PLUS:
-        camera.z_direction += 1
+        camera.R_direction += 1
     if symbol == pyglet.window.key.MINUS:
-        camera.z_direction -= 1
+        camera.R_direction -= 1
 
 
 @controller.event
 def on_draw():
     controller.clear()
+
+    controller.set_caption(f"tex_params: {controller.tex_params}")
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
@@ -172,5 +212,7 @@ def update(dt, controller):
 
 
 if __name__ == '__main__':
+    # Try to call this function 60 times per second
     pyglet.clock.schedule(update, controller)
+    # Set the view
     pyglet.app.run()
