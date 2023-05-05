@@ -35,6 +35,9 @@ class Controller(pyglet.window.Window):
         self.ex_shape.texture = sh.textureSimpleSetup(
             self.current_tex, *self.tex_params
         )
+    
+    #def update(self):
+    #    pass
 
 class Camera:
     def __init__(self, at=np.array([0.0, 0.0, 0.0]), eye=np.array([1.0, 1.0, 1.0]), up=np.array([0.0, 0.0, 1.0])) -> None:
@@ -85,6 +88,41 @@ glClearColor(0.05, 0.05, 0.12, 1.0)
 glEnable(GL_DEPTH_TEST)
 glUseProgram(controller.pipeline.shaderProgram)
 
+# What happens when the user presses these keys
+@controller.event
+def on_key_press(symbol, modifiers):
+    if symbol == pyglet.window.key.A:
+        camera.x_direction -= 1
+    if symbol == pyglet.window.key.D:
+        camera.x_direction += 1
+    if symbol == pyglet.window.key.W:
+        camera.y_direction -= 1
+    if symbol == pyglet.window.key.S:
+        camera.y_direction += 1
+    if symbol == pyglet.window.key.PLUS:
+        camera.z_direction -= 1
+    if symbol == pyglet.window.key.MINUS:
+        camera.z_direction += 1
+    # Close the window
+    elif symbol == pyglet.window.key.ESCAPE:
+        controller.close()
+
+# What happens when the user releases these keys
+@controller.event
+def on_key_release(symbol, modifiers):
+    if symbol == pyglet.window.key.A:
+        camera.x_direction += 1
+    if symbol == pyglet.window.key.D:
+        camera.x_direction -= 1
+    if symbol == pyglet.window.key.W:
+        camera.y_direction += 1
+    if symbol == pyglet.window.key.S:
+        camera.y_direction -= 1
+    if symbol == pyglet.window.key.PLUS:
+        camera.z_direction += 1
+    if symbol == pyglet.window.key.MINUS:
+        camera.z_direction -= 1
+
 @controller.event
 def on_draw():
     controller.clear()
@@ -95,7 +133,8 @@ def on_draw():
         camera.at,
         camera.up
     )
-    glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "model"), 1, GL_TRUE, tr.identity())
+    glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "model"), 1, GL_TRUE, tr.rotationX(np.pi/2))
+    glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "model"), 1, GL_TRUE, tr.rotationX(np.pi/2))
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
 
