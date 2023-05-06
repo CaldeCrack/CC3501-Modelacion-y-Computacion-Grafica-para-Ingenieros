@@ -52,7 +52,7 @@ class Camera:
         self.z = np.square(self.eye[2])
 
         # Ortographic projection
-        self.projection = tr.ortho(-5, 5, -5, 5, 0.1, 100)
+        self.projection = tr.ortho(-6, 6, -6, 6, 0.1, 100)
 
     def set_projection(self, projection_name):
         self.projection = self.available_projections[projection_name]
@@ -66,17 +66,48 @@ class Camera:
         self.at[1] = coords[1]
         self.at[2] = coords[2]
 
+# Movement of the ship#*s
+class Movement:
+    def __init__(self, at=np.array([1.0, 0.0, 0.0]), eye=np.array([0.0, 0.0, 0.0]), up=np.array([0.0, 0.0, 1.0])) -> None:
+        # Local coordinates
+        self.at = at
+        self.eye = eye
+        self.up = up
+
+        # Cartesian coordinates
+        self.x = np.square(self.eye[0])
+        self.y = np.square(self.eye[1])
+        self.z = np.square(self.eye[2])
+
+        # Directions
+        self.x_direction = 0
+        self.y_direction = 0
+        self.z_direction = 0
+
+    # Move the ship
+    def update(self):
+        self.x += self.x_direction*0.1
+        self.y += self.y_direction*0.1
+        self.z += self.z_direction*0.1
+
+        self.eye[0] = self.x
+        self.eye[1] = self.y
+        self.eye[2] = self.z
+
 # Setup of the window
 camera = Camera()
+movement = Movement()
 controller = Controller(width=WIDTH, height=HEIGHT)
 
-glClearColor(0.05, 0.05, 0.12, 1.0)
+glClearColor(0.05, 0.05, 0.1, 1.0)
 glEnable(GL_DEPTH_TEST)
 glUseProgram(controller.pipeline.shaderProgram)
 
 # Setup of the objects in the scene
 pochita = sg.SceneGraphNode("pochita")
-pochita.childs += [controller.ex_shape]
+pochita_ship = sg.SceneGraphNode("ship")
+pochita_ship.childs += [controller.ex_shape]
+pochita.childs += [pochita_ship]
 
 cube = createGPUShape(controller.pipeline, read_OBJ2(ASSETS["cube_obj"]))
 cube.texture = sh.textureSimpleSetup(controller.current_tex, *controller.tex_params)
@@ -92,7 +123,7 @@ def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.D:
         pass
     if symbol == pyglet.window.key.W:
-        pass
+        movement.x_direction += 1
     if symbol == pyglet.window.key.S:
         pass
     if symbol == pyglet.window.key.PLUS:
@@ -111,7 +142,7 @@ def on_key_release(symbol, modifiers):
     if symbol == pyglet.window.key.D:
         pass
     if symbol == pyglet.window.key.W:
-        pass
+        movement.x_direction -= 1
     if symbol == pyglet.window.key.S:
         pass
     if symbol == pyglet.window.key.PLUS:
@@ -126,9 +157,9 @@ def on_draw():
     controller.clear()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+    movement.update()
+    pochita_move = [tr.translate(movement.eye[0] + movement.x_direction*controller.total_time, 0, 0)]
     # Camera tracking of the ship
-    pochita_move = [tr.translate(5 * np.sin(controller.total_time), 0, 0)]
-    pochita.transform = tr.matmul(pochita_move)
     pochita_coords = sg.findPosition(pochita, "pochita")
     camera.update(pochita_coords)
 
@@ -141,6 +172,8 @@ def on_draw():
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
 
+    pochitaShip = sg.findNode(pochita, "ship")
+    pochitaShip.transform = tr.matmul(pochita_move)
     # Drawing of the scene graph
     platform.transform = np.matmul(tr.scale(20, 20, 0.25), tr.translate(0, 0, -1))
     sg.drawSceneGraphNode(platform, controller.pipeline, "model")
