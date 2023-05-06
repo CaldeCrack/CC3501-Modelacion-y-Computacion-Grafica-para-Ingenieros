@@ -86,13 +86,9 @@ class Movement:
 
     # Move the ship
     def update(self):
-        self.x += self.x_direction*0.1
-        self.y += self.y_direction*0.1
-        self.z += self.z_direction*0.1
-
-        self.eye[0] = self.x
-        self.eye[1] = self.y
-        self.eye[2] = self.z
+        self.eye[0] += self.x_direction*0.1
+        self.eye[1] += self.y_direction*0.1
+        self.eye[2] += self.z_direction*0.1
 
 # Setup of the window
 camera = Camera()
@@ -125,7 +121,7 @@ def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.W:
         movement.x_direction += 1
     if symbol == pyglet.window.key.S:
-        pass
+        movement.x_direction -= 1
     if symbol == pyglet.window.key.PLUS:
         pass
     if symbol == pyglet.window.key.MINUS:
@@ -144,7 +140,7 @@ def on_key_release(symbol, modifiers):
     if symbol == pyglet.window.key.W:
         movement.x_direction -= 1
     if symbol == pyglet.window.key.S:
-        pass
+        movement.x_direction += 1
     if symbol == pyglet.window.key.PLUS:
         pass
     if symbol == pyglet.window.key.MINUS:
@@ -158,9 +154,9 @@ def on_draw():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     movement.update()
-    pochita_move = [tr.translate(movement.eye[0] + movement.x_direction*controller.total_time, 0, 0)]
+    pochita_move = [tr.translate(movement.eye[0], 0, 0)]
     # Camera tracking of the ship
-    pochita_coords = sg.findPosition(pochita, "pochita")
+    pochita_coords = sg.findPosition(pochita, "ship")
     camera.update(pochita_coords)
 
     # Projection and view
