@@ -63,8 +63,8 @@ class Camera:
 
         # Spherical coordinates
         self.R = np.sqrt(np.square(self.eye[0]) + np.square(self.eye[1]) + np.square(self.eye[2]))
-        self.theta = np.arccos(self.eye[2]/self.R)
-        self.phi = np.arctan(self.eye[1]/self.eye[0])
+        self.theta = np.arccos(self.eye[2]/self.R) # vertical
+        self.phi = np.arctan(self.eye[1]/self.eye[0]) # horizontal
 
         # Movement/Rotation speed
         self.phi_speed = 0.1
