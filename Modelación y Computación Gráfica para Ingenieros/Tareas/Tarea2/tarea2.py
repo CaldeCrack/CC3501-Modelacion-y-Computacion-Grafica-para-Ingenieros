@@ -127,7 +127,7 @@ def on_draw():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Camera tracking of the ship
-    pochita_move = [tr.rotationZ(np.pi), tr.rotationX(np.pi/2), tr.translate(2 * np.sin(controller.total_time), 0, 0)]
+    pochita_move = [tr.rotationZ(np.pi), tr.rotationX(np.pi/2), tr.translate(5 * np.sin(controller.total_time), 0, 0)]
     pochita.transform = tr.matmul(pochita_move)
     pochita_coords = sg.findPosition(pochita, "pochita")
     camera.update(pochita_coords)
@@ -142,6 +142,7 @@ def on_draw():
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
 
     # Drawing of the scene graph
+    platform.transform = np.matmul(tr.scale(20, 20, 0.25), tr.translate(0, 0, -1))
     sg.drawSceneGraphNode(platform, controller.pipeline, "model")
     sg.drawSceneGraphNode(pochita, controller.pipeline, "model")
 
