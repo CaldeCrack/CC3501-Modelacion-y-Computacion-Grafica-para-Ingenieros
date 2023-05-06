@@ -22,6 +22,7 @@ WIDTH, HEIGHT = 800, 800
 ASSETS = {
     "pochita_obj": getAssetPath("pochita3.obj"),
     "pochita_tex": getAssetPath("pochita.png"),
+    "cube_obj": getAssetPath("cube.obj"),
 }
 
 # Controller of the pyglet window
@@ -69,7 +70,6 @@ class Camera:
 camera = Camera()
 controller = Controller(width=WIDTH, height=HEIGHT)
 
-
 glClearColor(0.05, 0.05, 0.12, 1.0)
 glEnable(GL_DEPTH_TEST)
 glUseProgram(controller.pipeline.shaderProgram)
@@ -77,6 +77,12 @@ glUseProgram(controller.pipeline.shaderProgram)
 # Setup of the objects in the scene
 pochita = sg.SceneGraphNode("pochita")
 pochita.childs += [controller.ex_shape]
+
+cube = createGPUShape(controller.pipeline, read_OBJ2(ASSETS["cube_obj"]))
+cube.texture = sh.textureSimpleSetup(controller.current_tex, *controller.tex_params)
+
+platform = sg.SceneGraphNode("platform")
+platform.childs += [cube]
 
 # What happens when the user presses these keys
 @controller.event
@@ -116,12 +122,17 @@ def on_key_release(symbol, modifiers):
 # What draws at every frame
 @controller.event
 def on_draw():
+    # Clear window every frame
     controller.clear()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    move = [tr.rotationZ(np.pi), tr.rotationX(np.pi/2), tr.translate(5 * np.sin(controller.total_time), 0, 0)]
-    pochita.transform = tr.matmul(move)
+
+    # Camera tracking of the ship
+    pochita_move = [tr.rotationZ(np.pi), tr.rotationX(np.pi/2), tr.translate(2 * np.sin(controller.total_time), 0, 0)]
+    pochita.transform = tr.matmul(pochita_move)
     pochita_coords = sg.findPosition(pochita, "pochita")
     camera.update(pochita_coords)
+
+    # Projection and view
     view = tr.lookAt(
         camera.eye,
         camera.at,
@@ -130,7 +141,8 @@ def on_draw():
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
 
-
+    # Drawing of the scene graph
+    sg.drawSceneGraphNode(platform, controller.pipeline, "model")
     sg.drawSceneGraphNode(pochita, controller.pipeline, "model")
 
 # Set a time in controller

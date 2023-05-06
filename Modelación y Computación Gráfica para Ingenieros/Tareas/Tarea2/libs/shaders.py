@@ -197,7 +197,8 @@ class SimpleTextureModelViewProjectionShaderProgram:
 
         # Binding the VAO and executing the draw call
         glBindVertexArray(gpuShape.vao)
-        glBindTexture(GL_TEXTURE_2D, gpuShape.texture)
+        if(gpuShape.texture):
+            glBindTexture(GL_TEXTURE_2D, gpuShape.texture)
 
         glDrawElements(mode, gpuShape.size, GL_UNSIGNED_INT, None)
 
