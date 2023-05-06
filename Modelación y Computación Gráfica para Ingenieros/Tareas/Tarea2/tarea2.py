@@ -20,7 +20,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 WIDTH, HEIGHT = 800, 800
 ASSETS = {
-    "pochita_obj": getAssetPath("pochita3.obj"),
+    "pochita_obj": getAssetPath("pochita2.obj"),
     "pochita_tex": getAssetPath("pochita.png"),
     "cube_obj": getAssetPath("cube.obj"),
 }
@@ -127,7 +127,7 @@ def on_draw():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Camera tracking of the ship
-    pochita_move = [tr.rotationZ(np.pi), tr.rotationX(np.pi/2), tr.translate(5 * np.sin(controller.total_time), 0, 0)]
+    pochita_move = [tr.translate(5 * np.sin(controller.total_time), 0, 0)]
     pochita.transform = tr.matmul(pochita_move)
     pochita_coords = sg.findPosition(pochita, "pochita")
     camera.update(pochita_coords)
