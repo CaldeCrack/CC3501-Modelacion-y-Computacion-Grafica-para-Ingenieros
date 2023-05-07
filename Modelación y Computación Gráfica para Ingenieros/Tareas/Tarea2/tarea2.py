@@ -23,6 +23,7 @@ ASSETS = {
     "ship_tex": getAssetPath("ship.png"),
     "cube_obj": getAssetPath("cube.obj"),
 }
+forward = False
 
 # Aspect ratio and projection
 display = pyglet.canvas.Display()
@@ -76,13 +77,11 @@ class Camera:
         self.at[1] = coords[1]
         self.at[2] = coords[2]
 
-# Movement of the ship#*s
+# Movement of the ship #! s
 class Movement:
-    def __init__(self, at=np.array([1.0, 0.0, 0.0]), eye=np.array([0.0, 0.0, 1.0]), up=np.array([0.0, 0.0, 1.0]), rotation_y=0, rotation_z=0) -> None:
+    def __init__(self, eye=np.array([0.0, 0.0, 1.0]), rotation_y=0, rotation_z=0) -> None:
         # Initial setup
-        self.at = at
         self.eye = eye
-        self.up = up
 
         # Rotations
         self.rotation_y = rotation_y
@@ -130,24 +129,37 @@ cube.texture = sh.textureSimpleSetup(controller.current_tex, *controller.tex_par
 platform = sg.SceneGraphNode("platform")
 platform.childs += [cube]
 
-# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down
+# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down | LeftShift: turbo
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
+    global forward
     if symbol == pyglet.window.key.A: movement.z_angle += 1
     if symbol == pyglet.window.key.D: movement.z_angle -= 1
-    if symbol == pyglet.window.key.W: movement.x_direction += 1
+    if symbol == pyglet.window.key.W:
+        forward = True
+        movement.x_direction += 1
     if symbol == pyglet.window.key.S: movement.x_direction -= 1
+    if modifiers == 17 and forward and movement.x_direction < 2:
+        movement.x_direction += 1
     # Close the window
     if symbol == pyglet.window.key.ESCAPE: controller.close()
 
 # What happens when the user releases these keys
 @controller.event
 def on_key_release(symbol, modifiers):
+    global forward
+    if modifiers == 16 and movement.x_direction > 1: movement.x_direction -= 1
     if symbol == pyglet.window.key.A: movement.z_angle -= 1
     if symbol == pyglet.window.key.D: movement.z_angle += 1
-    if symbol == pyglet.window.key.W: movement.x_direction -= 1
-    if symbol == pyglet.window.key.S: movement.x_direction += 1
+    if symbol == pyglet.window.key.W and movement.x_direction > 1:
+        movement.x_direction -= 2
+        forward = False
+    if symbol == pyglet.window.key.W and movement.x_direction == 1:
+        movement.x_direction -= 1
+        forward = False
+    if symbol == pyglet.window.key.S and movement.x_direction < -1: movement.x_direction += 2
+    if symbol == pyglet.window.key.S and movement.x_direction == -1: movement.x_direction += 1
 
 @controller.event
 def on_mouse_motion(x, y, dx, dy):
