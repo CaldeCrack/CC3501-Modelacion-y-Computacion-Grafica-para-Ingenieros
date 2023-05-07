@@ -101,9 +101,9 @@ class Movement:
         self.rotation_z += self.z_angle*0.1
 
         # Move in the local x axis (and hover a little bit)
-        self.eye[0] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.07)*np.cos(self.rotation_z)*self.speed
-        self.eye[1] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.07)*np.sin(self.rotation_z)*self.speed
-        self.eye[2] += (self.x_direction*np.sin(self.rotation_y)*-1+np.cos(self.rotation_y)*np.sin(2*controller.total_time)*0.07)*self.speed
+        self.eye[0] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*np.cos(self.rotation_z)*self.speed
+        self.eye[1] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*np.sin(self.rotation_z)*self.speed
+        self.eye[2] += (self.x_direction*np.sin(self.rotation_y)*-1+np.cos(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*self.speed
 
         # Stop rotation with the mouse
         movement.y_angle = 0
@@ -124,12 +124,14 @@ shipRotation.childs += [controller.ex_shape]
 ship.childs += [shipRotation]
 
 cube = createGPUShape(controller.pipeline, read_OBJ2(ASSETS["cube_obj"]))
-cube.texture = sh.textureSimpleSetup(controller.current_tex, *controller.tex_params)
+cube.texture = sh.textureSimpleSetup(controller.current_tex, *[GL_REPEAT, GL_REPEAT, GL_LINEAR, GL_LINEAR])
 
 platform = sg.SceneGraphNode("platform")
 platform.childs += [cube]
 
-# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down | LeftShift: turbo
+
+
+# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down | shift: turbo
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
@@ -182,7 +184,7 @@ def on_draw():
     ship.transform = tr.matmul(ship_move)
 
     # Drawing of the scene graph
-    platform.transform = np.matmul(tr.scale(20, 20, 0.00003), tr.translate(0, 0, -1))
+    platform.transform = np.matmul(tr.scale(100, 100, 0.0001), tr.translate(0, 0, -1))
     sg.drawSceneGraphNode(platform, controller.pipeline, "model")
     sg.drawSceneGraphNode(ship, controller.pipeline, "model")
 
