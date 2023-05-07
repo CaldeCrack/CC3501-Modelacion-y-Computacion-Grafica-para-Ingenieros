@@ -17,20 +17,30 @@ from OpenGL.GL import *
 
 # Initial data
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-WIDTH, HEIGHT = 700, 700
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"),
     "ship_tex": getAssetPath("ship.png"),
     "cube_obj": getAssetPath("cube.obj"),
 }
 
+# Aspect ratio and projection
+display = pyglet.canvas.Display()
+screen = display.get_default_screen()
+screen_height = screen.height
+screen_width = screen.width
+ORTHO = tr.ortho(-7*screen_width/screen_height, 7*screen_width/screen_height, -7, 7, 0.1, 100)
+
 # Controller of the pyglet window
 class Controller(pyglet.window.Window):
     def __init__(self, width, height, title=f"La mejor tarea 2 de la sección"):
-        super().__init__(width, height, title)
-        self.total_time = 0.0
+        # Initial setup of the window
+        super().__init__(width, height, title, fullscreen=True)
         self.set_exclusive_mouse(True)
+
+        # Time in the scene
+        self.total_time = 0.0
+
+        # Setup of the pipeline (texture models)
         self.pipeline = sh.SimpleTextureModelViewProjectionShaderProgram()
 
         # Ship model and texture
@@ -52,11 +62,7 @@ class Camera:
         self.y = np.square(self.eye[1])
         self.z = np.square(self.eye[2])
 
-        # Ortographic projection
-        self.projection = tr.ortho(-5, 5, -5, 5, 0.1, 100)
-
-    def set_projection(self, projection_name):
-        self.projection = self.available_projections[projection_name]
+        self.projection = ORTHO
 
     # Follow the ship
     def update(self, coords):
@@ -103,7 +109,7 @@ class Movement:
 # Setup of the window
 camera = Camera()
 movement = Movement()
-controller = Controller(width=WIDTH, height=HEIGHT)
+controller = Controller(width=screen_width, height=screen_height)
 
 glClearColor(0.05, 0.05, 0.1, 1.0)
 glEnable(GL_DEPTH_TEST)
