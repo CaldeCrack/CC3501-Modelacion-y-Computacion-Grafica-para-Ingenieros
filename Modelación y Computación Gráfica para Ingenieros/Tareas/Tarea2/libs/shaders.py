@@ -167,7 +167,7 @@ class SimpleTextureModelViewProjectionShaderProgram:
             OpenGL.GL.shaders.compileShader(fragment_shader, OpenGL.GL.GL_FRAGMENT_SHADER))
 
 
-    def setupVAO(self, gpuShape):
+    def setupVAO(self, gpuShape, obj):
 
         glBindVertexArray(gpuShape.vao)
 
@@ -176,16 +176,19 @@ class SimpleTextureModelViewProjectionShaderProgram:
 
         # 3d vertices + rgb color + 3d normals => 3*4 + 2*4 + 3*4 = 32 bytes
         position = glGetAttribLocation(self.shaderProgram, "position")
-        glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
+        if obj=="obj": glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(0))
+        else: glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(0))
         glEnableVertexAttribArray(position)
 
         color = glGetAttribLocation(self.shaderProgram, "texCoords")
-        glVertexAttribPointer(color, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+        if obj=="obj": glVertexAttribPointer(color, 2, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(12))
+        else: glVertexAttribPointer(color, 2, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(12))
         glEnableVertexAttribArray(color)
 
         normal = glGetAttribLocation(self.shaderProgram, "normal")
         if normal >= 0:
-            glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
+            if obj=="obj": glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 32, ctypes.c_void_p(20))
+            else: glVertexAttribPointer(normal, 3, GL_FLOAT, GL_FALSE, 20, ctypes.c_void_p(20))
             glEnableVertexAttribArray(normal)
 
         # Unbinding current vao

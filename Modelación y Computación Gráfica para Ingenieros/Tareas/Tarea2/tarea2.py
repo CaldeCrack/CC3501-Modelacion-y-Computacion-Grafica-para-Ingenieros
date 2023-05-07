@@ -8,7 +8,7 @@ import libs.shaders as sh
 import libs.transformations as tr
 import libs.scene_graph as sg
 import libs.basic_shapes as bs
-import libs.easy_shaders as es
+import libs.shapes as shp
 
 from libs.gpu_shape import createGPUShape
 from libs.obj_handler import read_OBJ2
@@ -123,15 +123,15 @@ shipRotation = sg.SceneGraphNode("shipRotation")
 shipRotation.childs += [controller.ex_shape]
 ship.childs += [shipRotation]
 
-cube = createGPUShape(controller.pipeline, read_OBJ2(ASSETS["cube_obj"]))
-cube.texture = sh.textureSimpleSetup(controller.current_tex, *[GL_REPEAT, GL_REPEAT, GL_LINEAR, GL_LINEAR])
+cube = createGPUShape(controller.pipeline, shp.createTextureCube(*[1.0, 1.0]), "cube")
+cube.texture = sh.textureSimpleSetup(controller.current_tex, *controller.tex_params)
 
 platform = sg.SceneGraphNode("platform")
 platform.childs += [cube]
 
 
 
-# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down | shift: turbo
+# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down | hold shift: turbo
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
@@ -184,7 +184,7 @@ def on_draw():
     ship.transform = tr.matmul(ship_move)
 
     # Drawing of the scene graph
-    platform.transform = np.matmul(tr.scale(100, 100, 0.0001), tr.translate(0, 0, -1))
+    platform.transform = np.matmul(tr.scale(1, 1, 1), tr.translate(0, 0, -1)) # 0.0001
     sg.drawSceneGraphNode(platform, controller.pipeline, "model")
     sg.drawSceneGraphNode(ship, controller.pipeline, "model")
 
