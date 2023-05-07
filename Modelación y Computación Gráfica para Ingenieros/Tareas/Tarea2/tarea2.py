@@ -7,7 +7,6 @@ import numpy as np
 import libs.shaders as sh
 import libs.transformations as tr
 import libs.scene_graph as sg
-import libs.basic_shapes as bs
 import libs.shapes as shp
 
 from libs.gpu_shape import createGPUShape
@@ -19,9 +18,8 @@ from OpenGL.GL import *
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 #! icono pal juego xd
 ASSETS = {
-    "ship_obj": getAssetPath("ship.obj"),
-    "ship_tex": getAssetPath("ship.png"),
-    "cube_obj": getAssetPath("cube.obj"),
+    "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"),
+    "cube_obj": getAssetPath("cube.obj"), "cube_tex": getAssetPath("dirt_1.png")
 }
 
 # Aspect ratio and projection
@@ -49,6 +47,12 @@ class Controller(pyglet.window.Window):
         self.tex_params = [GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST]
         self.current_tex = ASSETS["ship_tex"]
         self.ex_shape.texture = sh.textureSimpleSetup(self.current_tex, *self.tex_params)
+
+# Scene graph manager
+class Scene:
+    def __init__(self) -> None:
+        self.root = sg.SceneGraphNode("root")
+
 
 # Camera which controls the projection and view
 class Camera:
@@ -108,11 +112,13 @@ class Movement:
         # Stop rotation with the mouse
         movement.y_angle = 0
 
-# Setup of the window
+# Initial setup
 camera = Camera()
+scenario = Scene()
 movement = Movement()
 controller = Controller(width=screen_width, height=screen_height)
 
+# Camera setup
 glClearColor(0.05, 0.05, 0.1, 1.0)
 glEnable(GL_DEPTH_TEST)
 glUseProgram(controller.pipeline.shaderProgram)
@@ -123,8 +129,9 @@ shipRotation = sg.SceneGraphNode("shipRotation")
 shipRotation.childs += [controller.ex_shape]
 ship.childs += [shipRotation]
 
-cube = createGPUShape(controller.pipeline, shp.createTextureCube(*[1.0, 1.0]), "cube")
-cube.texture = sh.textureSimpleSetup(controller.current_tex, *controller.tex_params)
+
+cube = createGPUShape(controller.pipeline, shp.createTextureCube(*[50, 50]), "cube")
+cube.texture = sh.textureSimpleSetup(ASSETS["cube_tex"], *controller.tex_params)
 
 platform = sg.SceneGraphNode("platform")
 platform.childs += [cube]
@@ -166,10 +173,11 @@ def on_draw():
 
     # Ship movement
     movement.update()
-    # print(movement.y_angle)
     ship_coords = sg.findPosition(ship, "shipRotation")
-    ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)] #! rotacion del personaje
-    ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])] #! movimiento del personaje
+    ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
+    ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
+    shipRotation.transform = tr.matmul(ship_rot)
+    ship.transform = tr.matmul(ship_move)
 
     # Camera tracking of the ship
     camera.update(ship_coords)
@@ -179,12 +187,8 @@ def on_draw():
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
 
-    shipShip = sg.findNode(ship, "shipRotation")
-    shipShip.transform = tr.matmul(ship_rot)
-    ship.transform = tr.matmul(ship_move)
-
     # Drawing of the scene graph
-    platform.transform = np.matmul(tr.scale(1, 1, 1), tr.translate(0, 0, -1)) # 0.0001
+    platform.transform = np.matmul(tr.scale(200, 200, 0.0001), tr.translate(0, 0, -1))
     sg.drawSceneGraphNode(platform, controller.pipeline, "model")
     sg.drawSceneGraphNode(ship, controller.pipeline, "model")
 
