@@ -18,7 +18,7 @@ from OpenGL.GL import *
 # Initial data
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-WIDTH, HEIGHT = 800, 800
+WIDTH, HEIGHT = 700, 700
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"),
     "ship_tex": getAssetPath("ship.png"),
@@ -30,6 +30,7 @@ class Controller(pyglet.window.Window):
     def __init__(self, width, height, title=f"La mejor tarea 2 de la sección"):
         super().__init__(width, height, title)
         self.total_time = 0.0
+        self.set_exclusive_mouse(True)
         self.pipeline = sh.SimpleTextureModelViewProjectionShaderProgram()
 
         # Ship model and texture
@@ -52,7 +53,7 @@ class Camera:
         self.z = np.square(self.eye[2])
 
         # Ortographic projection
-        self.projection = tr.ortho(-6, 6, -6, 6, 0.1, 100)
+        self.projection = tr.ortho(-5, 5, -5, 5, 0.1, 100)
 
     def set_projection(self, projection_name):
         self.projection = self.available_projections[projection_name]
@@ -96,6 +97,9 @@ class Movement:
         self.eye[1] += self.x_direction*0.1 *np.cos(self.rotation_y)*np.sin(self.rotation_z)
         self.eye[2] += self.x_direction*0.1 *np.sin(self.rotation_y)*-1
 
+        # Stop rotation with the mouse
+        movement.y_angle = 0
+
 # Setup of the window
 camera = Camera()
 movement = Movement()
@@ -120,37 +124,25 @@ platform.childs += [cube]
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
-    if symbol == pyglet.window.key.A:
-        movement.z_angle += 1
-    if symbol == pyglet.window.key.D:
-        movement.z_angle -= 1
-    if symbol == pyglet.window.key.W:
-        movement.x_direction += 1
-    if symbol == pyglet.window.key.S:
-        movement.x_direction -= 1
-    if symbol == pyglet.window.key.PLUS:
-        movement.y_angle -= 1
-    if symbol == pyglet.window.key.MINUS:
-        movement.y_angle += 1
+    if symbol == pyglet.window.key.A: movement.z_angle += 1
+    if symbol == pyglet.window.key.D: movement.z_angle -= 1
+    if symbol == pyglet.window.key.W: movement.x_direction += 1
+    if symbol == pyglet.window.key.S: movement.x_direction -= 1
     # Close the window
-    elif symbol == pyglet.window.key.ESCAPE:
-        controller.close()
+    if symbol == pyglet.window.key.ESCAPE: controller.close()
 
 # What happens when the user releases these keys
 @controller.event
 def on_key_release(symbol, modifiers):
-    if symbol == pyglet.window.key.A:
-        movement.z_angle -= 1
-    if symbol == pyglet.window.key.D:
-        movement.z_angle += 1
-    if symbol == pyglet.window.key.W:
-        movement.x_direction -= 1
-    if symbol == pyglet.window.key.S:
-        movement.x_direction += 1
-    if symbol == pyglet.window.key.PLUS:
-        movement.y_angle += 1
-    if symbol == pyglet.window.key.MINUS:
-        movement.y_angle -= 1
+    if symbol == pyglet.window.key.A: movement.z_angle -= 1
+    if symbol == pyglet.window.key.D: movement.z_angle += 1
+    if symbol == pyglet.window.key.W: movement.x_direction -= 1
+    if symbol == pyglet.window.key.S: movement.x_direction += 1
+
+@controller.event
+def on_mouse_motion(x, y, dx, dy):
+    if dy>0: movement.y_angle = -1
+    if dy<0: movement.y_angle = 1
 
 # What draws at every frame
 @controller.event
@@ -161,6 +153,7 @@ def on_draw():
 
     # Ship movement
     movement.update()
+    # print(movement.y_angle)
     ship_coords = sg.findPosition(ship, "shipRotation")
     ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)] #! rotacion del personaje
     ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])] #! movimiento del personaje
@@ -169,11 +162,7 @@ def on_draw():
     camera.update(ship_coords)
 
     # Projection and view
-    view = tr.lookAt(
-        camera.eye,
-        camera.at,
-        camera.up
-    )
+    view = tr.lookAt(camera.eye, camera.at, camera.up)
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
 
@@ -182,7 +171,7 @@ def on_draw():
     ship.transform = tr.matmul(ship_move)
 
     # Drawing of the scene graph
-    platform.transform = np.matmul(tr.scale(20, 20, 0.25), tr.translate(0, 0, -1))
+    platform.transform = np.matmul(tr.scale(20, 20, 0.00003), tr.translate(0, 0, -1))
     sg.drawSceneGraphNode(platform, controller.pipeline, "model")
     sg.drawSceneGraphNode(ship, controller.pipeline, "model")
 
