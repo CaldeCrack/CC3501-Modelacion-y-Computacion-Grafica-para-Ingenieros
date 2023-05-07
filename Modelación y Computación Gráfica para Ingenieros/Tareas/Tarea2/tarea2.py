@@ -17,6 +17,7 @@ from OpenGL.GL import *
 
 # Initial data
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+#! icono pal juego xd
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"),
     "ship_tex": getAssetPath("ship.png"),
@@ -68,7 +69,9 @@ class Camera:
     def update(self, coords):
         self.eye[0] = self.x+coords[0]
         self.eye[1] = self.y+coords[1]
-        self.eye[2] = self.z+coords[2]
+        # If traverses across the floor to accomplish the ship being always on camera
+        if coords[2]>0: self.eye[2] = self.z+coords[2]
+        else: self.eye[2] = -self.z+coords[2]
         self.at[0] = coords[0]
         self.at[1] = coords[1]
         self.at[2] = coords[2]
@@ -89,8 +92,8 @@ class Movement:
         self.x_direction = 0
 
         # Angles
-        self.y_angle = 0
-        self.z_angle = 0
+        self.y_angle = 0 # theta
+        self.z_angle = 0 # phi
 
     # Move the ship
     def update(self):
@@ -98,10 +101,10 @@ class Movement:
         self.rotation_y += self.y_angle*0.1
         self.rotation_z += self.z_angle*0.1
 
-        # Move in the local x axis
-        self.eye[0] += self.x_direction*0.1 *np.cos(self.rotation_y)*np.cos(self.rotation_z)
-        self.eye[1] += self.x_direction*0.1 *np.cos(self.rotation_y)*np.sin(self.rotation_z)
-        self.eye[2] += self.x_direction*0.1 *np.sin(self.rotation_y)*-1
+        # Move in the local x axis (and hover a little bit)
+        self.eye[0] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.07)*np.cos(self.rotation_z)*0.15
+        self.eye[1] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.07)*np.sin(self.rotation_z)*0.15
+        self.eye[2] += (self.x_direction*np.sin(self.rotation_y)+np.cos(self.rotation_y)*np.sin(2*controller.total_time)*-0.07)*-0.15
 
         # Stop rotation with the mouse
         movement.y_angle = 0
@@ -127,6 +130,7 @@ cube.texture = sh.textureSimpleSetup(controller.current_tex, *controller.tex_par
 platform = sg.SceneGraphNode("platform")
 platform.childs += [cube]
 
+# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
