@@ -44,31 +44,26 @@ class Controller(pyglet.window.Window):
 # Scene graph manager
 class Scene:
     def __init__(self) -> None:
+        # Initial setup of the scene
         self.pipeline = sh.SimpleTextureModelViewProjectionShaderProgram()
-
-        # Setup of the root node
         self.root = sg.SceneGraphNode("root")
 
-        # Ships
+        # Squad
         ship_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ship_obj"]))
         tex_params = TEX
         current_tex = ASSETS["ship_tex"]
         ship_obj.texture = sh.textureSimpleSetup(current_tex, *tex_params)
-        self.ships = sg.SceneGraphNode("ships")
-        self.root.childs += [self.ships]
+        self.squad = sg.SceneGraphNode("squad")
+        self.root.childs += [self.squad]
 
-        # Nave principal
-        self.shipRotation = sg.SceneGraphNode("shipRotation")
+        # Ships
+        self.shipRotation = sg.SceneGraphNode("shipRotation") # Main ship
         self.shipRotation.childs += [ship_obj]
-
-        # Naves secundarias
-        self.shipRotation2 = sg.SceneGraphNode("shipRotation2")
+        self.shipRotation2 = sg.SceneGraphNode("shipRotation2") # Side ships
         self.shipRotation2.childs += [ship_obj]
-
         self.shipRotation3 = sg.SceneGraphNode("shipRotation3")
         self.shipRotation3.childs += [ship_obj]
-
-        self.ships.childs += [self.shipRotation, self.shipRotation2, self.shipRotation3]
+        self.squad.childs += [self.shipRotation, self.shipRotation2, self.shipRotation3]
 
         # Floor
         cube = createGPUShape(self.pipeline, shp.createTextureCube(*[50, 50]), "cube")
@@ -79,6 +74,9 @@ class Scene:
         self.scenario.childs += [self.floor]
         self.floor.transform = np.matmul(tr.scale(200, 200, 0.0001), tr.translate(0, 0, -1))
         self.root.childs += [self.floor]
+
+        # Props
+        
 
 # Camera which controls the projection and view
 class Camera:
@@ -106,7 +104,7 @@ class Camera:
         self.at[1] = coords[1]
         self.at[2] = coords[2]
 
-# Movement of the ship #! s
+# Movement of the ships
 class Movement:
     def __init__(self, eye=np.array([0.0, 0.0, 1.0]), rotation_y=0, rotation_z=0) -> None:
         # Initial setup
@@ -124,7 +122,7 @@ class Movement:
         self.y_angle = 0 # theta
         self.z_angle = 0 # phi
 
-    # Move the ship
+    # Move the ship #* agregar limites de mapa
     def update(self):
         # Update facing angle of the ship
         self.rotation_y += self.y_angle*0.1
@@ -184,13 +182,13 @@ def on_draw():
 
     # Ships movement
     movement.update()
-    ship_coords = sg.findPosition(scene.ships, "shipRotation")
+    ship_coords = sg.findPosition(scene.squad, "shipRotation")
     ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
     ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
     scene.shipRotation.transform = tr.matmul(ship_rot)
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2.0, -2.0, 0.0)]+ship_rot)
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2.0, 2.0, 0.0)]+ship_rot)
-    scene.ships.transform = tr.matmul(ship_move)
+    scene.squad.transform = tr.matmul(ship_move)
 
     # Camera tracking of the ship
     camera.update(ship_coords)
