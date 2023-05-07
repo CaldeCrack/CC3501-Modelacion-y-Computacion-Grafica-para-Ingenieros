@@ -69,29 +69,17 @@ class Camera:
 # Movement of the ship#*s
 class Movement:
     def __init__(self, at=np.array([1.0, 0.0, 0.0]), eye=np.array([0.0, 0.0, 1.0]), up=np.array([0.0, 0.0, 1.0]), rotation_y=0, rotation_z=0) -> None:
-        # Local coordinates
+        # Initial setup
         self.at = at
         self.eye = eye
         self.up = up
-
-        # Spherical coordinates
-        # self.R = np.sqrt(np.square(self.eye[0]) + np.square(self.eye[1]) + np.square(self.eye[2]))
-        # self.theta = np.arccos(self.eye[2]/self.R)
-        # self.phi = np.arctan(self.eye[1]/self.eye[0])
-
-        # Cartesian coordinates
-        # self.x = np.square(self.eye[0])
-        # self.y = np.square(self.eye[1])
-        # self.z = np.square(self.eye[2])
 
         # Rotations
         self.rotation_y = rotation_y
         self.rotation_z = rotation_z
 
-        # Directions
+        # Local x axis direction
         self.x_direction = 0
-        # self.y_direction = 0
-        # self.z_direction = 0
 
         # Angles
         self.y_angle = 0
@@ -103,7 +91,7 @@ class Movement:
         self.rotation_y += self.y_angle*0.1
         self.rotation_z += self.z_angle*0.1
 
-        # 
+        # Move in the local x axis
         self.eye[0] += self.x_direction*0.1 *np.cos(self.rotation_y)*np.cos(self.rotation_z)
         self.eye[1] += self.x_direction*0.1 *np.cos(self.rotation_y)*np.sin(self.rotation_z)
         self.eye[2] += self.x_direction*0.1 *np.sin(self.rotation_y)*-1
