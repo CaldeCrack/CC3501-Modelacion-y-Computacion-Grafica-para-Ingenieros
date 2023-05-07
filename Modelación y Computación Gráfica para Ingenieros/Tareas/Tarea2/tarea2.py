@@ -20,22 +20,22 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 WIDTH, HEIGHT = 800, 800
 ASSETS = {
-    "pochita_obj": getAssetPath("pochita2.obj"),
-    "pochita_tex": getAssetPath("pochita.png"),
+    "ship_obj": getAssetPath("ship.obj"),
+    "ship_tex": getAssetPath("ship.png"),
     "cube_obj": getAssetPath("cube.obj"),
 }
 
 # Controller of the pyglet window
 class Controller(pyglet.window.Window):
-    def __init__(self, width, height, title=f"Pochita :3"):
+    def __init__(self, width, height, title=f"La mejor tarea 2 de la sección"):
         super().__init__(width, height, title)
         self.total_time = 0.0
         self.pipeline = sh.SimpleTextureModelViewProjectionShaderProgram()
 
         # Ship model and texture
-        self.ex_shape = createGPUShape(self.pipeline, read_OBJ2(ASSETS["pochita_obj"]))
+        self.ex_shape = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ship_obj"]))
         self.tex_params = [GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST]
-        self.current_tex = ASSETS["pochita_tex"]
+        self.current_tex = ASSETS["ship_tex"]
         self.ex_shape.texture = sh.textureSimpleSetup(self.current_tex, *self.tex_params)
 
 # Camera which controls the projection and view
