@@ -80,9 +80,9 @@ class Movement:
         # self.phi = np.arctan(self.eye[1]/self.eye[0])
 
         # Cartesian coordinates
-        self.x = np.square(self.eye[0])
-        self.y = np.square(self.eye[1])
-        self.z = np.square(self.eye[2])
+        # self.x = np.square(self.eye[0])
+        # self.y = np.square(self.eye[1])
+        # self.z = np.square(self.eye[2])
 
         # Rotations
         self.rotation_y = rotation_y
@@ -90,8 +90,8 @@ class Movement:
 
         # Directions
         self.x_direction = 0
-        self.y_direction = 0
-        self.z_direction = 0
+        # self.y_direction = 0
+        # self.z_direction = 0
 
         # Angles
         self.y_angle = 0
@@ -99,16 +99,14 @@ class Movement:
 
     # Move the ship
     def update(self):
-        # self.R += 0.1 * self.x_direction
-        # self.theta += 0.1 * self.y_direction
-        # self.phi += 0.1 * self.z_rotation
-
-        self.eye[0] += self.x_direction*0.1
-        self.eye[1] += self.y_direction*0.1
-        self.eye[2] += self.z_direction*0.1
-        
+        # Update facing angle of the ship
         self.rotation_y += self.y_angle*0.1
         self.rotation_z += self.z_angle*0.1
+
+        # 
+        self.eye[0] += self.x_direction*0.1 *np.cos(self.rotation_y)*np.cos(self.rotation_z)
+        self.eye[1] += self.x_direction*0.1 *np.cos(self.rotation_y)*np.sin(self.rotation_z)
+        self.eye[2] += self.x_direction*0.1 *np.sin(self.rotation_y)*-1
 
 # Setup of the window
 camera = Camera()
@@ -143,9 +141,9 @@ def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.S:
         movement.x_direction -= 1
     if symbol == pyglet.window.key.PLUS:
-        movement.y_angle += 1
-    if symbol == pyglet.window.key.MINUS:
         movement.y_angle -= 1
+    if symbol == pyglet.window.key.MINUS:
+        movement.y_angle += 1
     # Close the window
     elif symbol == pyglet.window.key.ESCAPE:
         controller.close()
@@ -162,9 +160,9 @@ def on_key_release(symbol, modifiers):
     if symbol == pyglet.window.key.S:
         movement.x_direction += 1
     if symbol == pyglet.window.key.PLUS:
-        movement.y_angle -= 1
-    if symbol == pyglet.window.key.MINUS:
         movement.y_angle += 1
+    if symbol == pyglet.window.key.MINUS:
+        movement.y_angle -= 1
 
 # What draws at every frame
 @controller.event
@@ -176,8 +174,8 @@ def on_draw():
     # Ship movement
     movement.update()
     ship_coords = sg.findPosition(ship, "shipRotation")
-    ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
-    ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
+    ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)] #! rotacion del personaje
+    ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])] #! movimiento del personaje
 
     # Camera tracking of the ship
     camera.update(ship_coords)
