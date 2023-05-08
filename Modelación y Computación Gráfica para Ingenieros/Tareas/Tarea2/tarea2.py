@@ -146,10 +146,8 @@ class Camera:
     def update(self, coords):
         self.eye[0] = self.x+coords[0]
         self.eye[1] = self.y+coords[1]
+        self.eye[2] = self.z+coords[2]
 
-        # If traverses across the floor it moves down to accomplish the ships being always on camera
-        if coords[2]>0: self.eye[2] = self.z+coords[2]
-        else: self.eye[2] = -self.z+coords[2]
         self.at[0] = coords[0]
         self.at[1] = coords[1]
         self.at[2] = coords[2]
@@ -178,10 +176,16 @@ class Movement:
         self.rotation_y += self.y_angle*0.1
         self.rotation_z += self.z_angle*0.1
 
-        # Move in the local x axis (and hover a little bit)
-        self.eye[0] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*np.cos(self.rotation_z)*self.speed
-        self.eye[1] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*np.sin(self.rotation_z)*self.speed
-        self.eye[2] += (self.x_direction*np.sin(self.rotation_y)*-1+np.cos(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*self.speed
+        # Move in the local x axis (and hover a little bit) (and set the limits of the map)
+        if np.abs(self.eye[0]) < 50: self.eye[0] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*np.cos(self.rotation_z)*self.speed
+        elif self.eye[0] >= 50: self.eye[0] -= 0.01
+        else: self.eye[0] += 0.01
+        if np.abs(self.eye[1]) < 50: self.eye[1] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*np.sin(self.rotation_z)*self.speed
+        elif self.eye[1] >= 50: self.eye[1] -= 0.01
+        else: self.eye[1] += 0.01
+        if self.eye[2] < 20 and self.eye[2] > 0.3: self.eye[2] += (self.x_direction*np.sin(self.rotation_y)*-1+np.cos(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*self.speed
+        elif self.eye[2] >= 20: self.eye[2] -= 0.01
+        elif self.eye[2] <= 0.3: self.eye[2] += 0.01
 
         # Stop rotation with the mouse
         movement.y_angle = 0
