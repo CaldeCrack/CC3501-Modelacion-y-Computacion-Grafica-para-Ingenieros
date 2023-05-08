@@ -18,8 +18,10 @@ from OpenGL.GL import *
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 #! icono pal juego xd
 ASSETS = {
-    "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"),
-    "cube_obj": getAssetPath("cube.obj"), "cube_tex": getAssetPath("dirt_1.png")
+    "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # model and texture by me
+    "cube_obj": getAssetPath("cube.obj"), "cube_tex": getAssetPath("dirt_1.png"), # texture by Screaming Brain Studios
+    "build1_obj": getAssetPath("build1.obj"), "build1_tex": getAssetPath("build1.png"), # models and textures by Mykhailo Ohorodnichuk
+    "build2_obj": getAssetPath("build2.obj"), "build2_tex": getAssetPath("build2.png"), # ---
 }
 
 # Aspect ratio and projection
@@ -47,12 +49,11 @@ class Scene:
         # Initial setup of the scene
         self.pipeline = sh.SimpleTextureModelViewProjectionShaderProgram()
         self.root = sg.SceneGraphNode("root")
-
-        # Squad
-        ship_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ship_obj"]))
         tex_params = TEX
-        current_tex = ASSETS["ship_tex"]
-        ship_obj.texture = sh.textureSimpleSetup(current_tex, *tex_params)
+
+        # --- Squad ---
+        ship_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ship_obj"]))
+        ship_obj.texture = sh.textureSimpleSetup(ASSETS["ship_tex"], *tex_params)
         self.squad = sg.SceneGraphNode("squad")
         self.root.childs += [self.squad]
 
@@ -65,18 +66,33 @@ class Scene:
         self.shipRotation3.childs += [ship_obj]
         self.squad.childs += [self.shipRotation, self.shipRotation2, self.shipRotation3]
 
+        # --- Scenery ---
         # Floor
-        cube = createGPUShape(self.pipeline, shp.createTextureCube(*[50, 50]), "cube")
-        cube.texture = sh.textureSimpleSetup(ASSETS["cube_tex"], *TEX)
         self.scenario = sg.SceneGraphNode("scenario")
+        cube = createGPUShape(self.pipeline, shp.createTextureQuad(*[50, 50]), "cube")
+        cube.texture = sh.textureSimpleSetup(ASSETS["cube_tex"], *tex_params)
         self.floor = sg.SceneGraphNode("floor")
         self.floor.childs += [cube]
         self.scenario.childs += [self.floor]
-        self.floor.transform = np.matmul(tr.scale(200, 200, 0.0001), tr.translate(0, 0, -1))
-        self.root.childs += [self.floor]
+        self.floor.transform = np.matmul(tr.scale(200, 200, 1), tr.translate(0, 0, -1))
+        self.root.childs += [self.scenario]
 
-        # Props
-        
+        # Buildings
+        build1 = sg.SceneGraphNode("build1")
+        build1_transform = [tr.translate(10, 12, 0), tr.uniformScale(1.5), tr.rotationX(np.pi/2)]
+        build1.transform = tr.matmul(build1_transform)
+        build_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["build1_obj"]))
+        build_model.texture = sh.textureSimpleSetup(ASSETS["build1_tex"], *tex_params)
+        build1.childs += [build_model]
+        self.scenario.childs += [build1]
+
+        build2 = sg.SceneGraphNode("build2")
+        build2_transform = [tr.translate(-7, -2, 0), tr.uniformScale(1.4), tr.rotationX(np.pi/2)]
+        build2.transform = tr.matmul(build2_transform)
+        build_model2 = createGPUShape(self.pipeline, read_OBJ2(ASSETS["build2_obj"]))
+        build_model2.texture = sh.textureSimpleSetup(ASSETS["build2_tex"], *tex_params)
+        build2.childs += [build_model2]
+        self.scenario.childs += [build2]
 
 # Camera which controls the projection and view
 class Camera:
@@ -97,7 +113,8 @@ class Camera:
     def update(self, coords):
         self.eye[0] = self.x+coords[0]
         self.eye[1] = self.y+coords[1]
-        # If traverses across the floor to accomplish the ship being always on camera
+
+        # If traverses across the floor it moves down to accomplish the ships being always on camera
         if coords[2]>0: self.eye[2] = self.z+coords[2]
         else: self.eye[2] = -self.z+coords[2]
         self.at[0] = coords[0]
@@ -146,8 +163,9 @@ movement = Movement()
 glClearColor(0.05, 0.05, 0.1, 1.0)
 glEnable(GL_DEPTH_TEST)
 glUseProgram(scene.pipeline.shaderProgram)
+#* iluminacion
 
-# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down | hold shift: turbo
+# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down | hold shift: turbo #* cambiar comentario arriba
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
