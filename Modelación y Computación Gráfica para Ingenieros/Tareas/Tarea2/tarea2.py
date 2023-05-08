@@ -14,6 +14,14 @@ from libs.obj_handler import read_OBJ2
 from libs.assets_path import getAssetPath
 from OpenGL.GL import *
 
+"""
+Controles:
+    W/S: move forward/backward
+    A/D: turn left/right
+    move mouse up/down: turn up/down
+    hold shift: turbo
+"""
+
 # Initial data
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ASSETS = {
@@ -189,7 +197,6 @@ glClearColor(0.05, 0.05, 0.1, 1.0)
 glEnable(GL_DEPTH_TEST)
 glUseProgram(scene.pipeline.shaderProgram)
 
-# Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down | hold shift: turbo #* cambiar comentario arriba
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
@@ -245,6 +252,9 @@ def on_draw():
 
     # Camera tracking of the ship
     camera.update(ship_coords)
+
+    #! Illumination or something
+    # glEnable(GL_LIGHTING)
 
     # Projection and view
     view = tr.lookAt(camera.eye, camera.at, camera.up)
