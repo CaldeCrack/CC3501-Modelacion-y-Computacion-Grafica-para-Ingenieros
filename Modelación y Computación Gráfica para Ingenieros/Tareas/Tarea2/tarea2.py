@@ -235,7 +235,6 @@ def on_draw():
 
     # Ships movement
     movement.update()
-    ship_coords = sg.findPosition(scene.squad, "shipRotation")
     ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
     ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
     scene.shipRotation.transform = tr.matmul(ship_rot)
@@ -254,7 +253,7 @@ def on_draw():
     coin.transform = tr.matmul(coin_transform)
 
     # Camera tracking of the ship
-    camera.update(ship_coords)
+    camera.update(movement.eye)
 
     #! Illumination or something
     # glEnable(GL_LIGHTING)
