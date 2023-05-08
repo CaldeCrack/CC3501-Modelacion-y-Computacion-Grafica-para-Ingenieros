@@ -16,15 +16,15 @@ from OpenGL.GL import *
 
 # Initial data
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-#! icono pal juego xd
 ASSETS = {
-    "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # model and texture by me
+    "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
     "ring_obj": getAssetPath("ring.obj"), "ring_tex": getAssetPath("ring.png"), # ---
     "coin_obj": getAssetPath("coin.obj"), # ---
     "cube_obj": getAssetPath("cube.obj"), "cube_tex": getAssetPath("dirt_1.png"), # texture by Screaming Brain Studios
     "among_us_obj": getAssetPath("among_us.obj"), "among_us_tex": getAssetPath("among_us.png"), # model and texture by Vilitay
     "build1_obj": getAssetPath("build1.obj"), "build1_tex": getAssetPath("build1.png"), # models and textures by Mykhailo Ohorodnichuk
     "build2_obj": getAssetPath("build2.obj"), "build2_tex": getAssetPath("build2.png"), # ---
+    "icon": getAssetPath("icon.png"), # icon by Freepik
 }
 
 # Aspect ratio and projection
@@ -41,7 +41,7 @@ class Controller(pyglet.window.Window):
         # Initial setup of the window
         super().__init__(width, height, title, fullscreen=True)
         self.set_exclusive_mouse(True)
-        #! icono pal juego xd
+        self.set_icon(pyglet.image.load(ASSETS["icon"]))
 
         # Time in the scene
         self.total_time = 0.0
@@ -81,16 +81,15 @@ class Scene:
         self.root.childs += [self.scenario]
 
         # Buildings
-        build1 = sg.SceneGraphNode("build1")
+        build1 = sg.SceneGraphNode("build1") # First building
         build1_transform = [tr.translate(10, 12, 0), tr.uniformScale(1.5), tr.rotationX(np.pi/2)]
         build1.transform = tr.matmul(build1_transform)
         build_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["build1_obj"]))
         build_model.texture = sh.textureSimpleSetup(ASSETS["build1_tex"], *tex_params)
         build1.childs += [build_model]
         self.scenario.childs += [build1]
-
-        build2 = sg.SceneGraphNode("build2")
-        build2_transform = [tr.translate(-7, -2, 0), tr.uniformScale(1.4), tr.rotationX(np.pi/2)]
+        build2 = sg.SceneGraphNode("build2") # Second building
+        build2_transform = [tr.translate(-7, -2, 0), tr.uniformScale(1.4), tr.rotationZ(np.pi/2), tr.rotationX(np.pi/2)]
         build2.transform = tr.matmul(build2_transform)
         build_model2 = createGPUShape(self.pipeline, read_OBJ2(ASSETS["build2_obj"]))
         build_model2.texture = sh.textureSimpleSetup(ASSETS["build2_tex"], *tex_params)
@@ -113,7 +112,7 @@ class Scene:
 
         # Among Us
         among_us = sg.SceneGraphNode("among_us")
-        among_us_transform = [tr.translate(9, -1, 2), tr.uniformScale(2.0), tr.rotationZ(np.pi/2), tr.rotationX(np.pi/2)]
+        among_us_transform = [tr.translate(9, -1, 1.5), tr.uniformScale(2.0), tr.rotationZ(np.pi), tr.rotationX(np.pi/2)]
         among_us.transform = tr.matmul(among_us_transform)
         among_us_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["among_us_obj"]))
         among_us_model.texture = sh.textureSimpleSetup(ASSETS["among_us_tex"], *tex_params)
@@ -189,7 +188,6 @@ movement = Movement()
 glClearColor(0.05, 0.05, 0.1, 1.0)
 glEnable(GL_DEPTH_TEST)
 glUseProgram(scene.pipeline.shaderProgram)
-#* iluminacion
 
 # Controls | W/S: move forward / backward | A/D: turn left/right | move mouse up/down: turn up/down | hold shift: turbo #* cambiar comentario arriba
 # What happens when the user presses these keys
@@ -199,18 +197,19 @@ def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.D: movement.z_angle -= 1
     if symbol == pyglet.window.key.W: movement.x_direction += 1
     if symbol == pyglet.window.key.S: movement.x_direction -= 1
-    if modifiers == 17: movement.speed = 0.3
+    if modifiers == pyglet.window.key.MOD_SHIFT: movement.speed = 0.3
     # Close the window
     if symbol == pyglet.window.key.ESCAPE: controller.close()
 
 # What happens when the user releases these keys
 @controller.event
 def on_key_release(symbol, modifiers):
+    print(modifiers)
     if symbol == pyglet.window.key.A: movement.z_angle -= 1
     if symbol == pyglet.window.key.D: movement.z_angle += 1
     if symbol == pyglet.window.key.W: movement.x_direction -= 1
     if symbol == pyglet.window.key.S: movement.x_direction += 1
-    if modifiers == 16: movement.speed = 0.15
+    if modifiers == pyglet.window.key.MOD_SHIFT-1: movement.speed = 0.15 # for some reason is a different value on release (at least in my pc)
 
 @controller.event
 def on_mouse_motion(x, y, dx, dy):
