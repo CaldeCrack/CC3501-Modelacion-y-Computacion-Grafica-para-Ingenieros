@@ -19,7 +19,10 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 #! icono pal juego xd
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # model and texture by me
+    "ring_obj": getAssetPath("ring.obj"), "ring_tex": getAssetPath("ring.png"), # ---
+    "coin_obj": getAssetPath("coin.obj"), # ---
     "cube_obj": getAssetPath("cube.obj"), "cube_tex": getAssetPath("dirt_1.png"), # texture by Screaming Brain Studios
+    "among_us_obj": getAssetPath("among_us.obj"), "among_us_tex": getAssetPath("among_us.png"), # model and texture by Vilitay
     "build1_obj": getAssetPath("build1.obj"), "build1_tex": getAssetPath("build1.png"), # models and textures by Mykhailo Ohorodnichuk
     "build2_obj": getAssetPath("build2.obj"), "build2_tex": getAssetPath("build2.png"), # ---
 }
@@ -29,7 +32,7 @@ display = pyglet.canvas.Display()
 screen = display.get_default_screen()
 screen_height = screen.height
 screen_width = screen.width
-ORTHO = tr.ortho(-7*screen_width/screen_height, 7*screen_width/screen_height, -7, 7, 0.1, 100)
+ORTHO = tr.ortho(-10*screen_width/screen_height, 10*screen_width/screen_height, -10, 10, 0.1, 100)
 TEX = [GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST]
 
 # Controller of the pyglet window
@@ -74,7 +77,7 @@ class Scene:
         self.floor = sg.SceneGraphNode("floor")
         self.floor.childs += [cube]
         self.scenario.childs += [self.floor]
-        self.floor.transform = np.matmul(tr.scale(200, 200, 1), tr.translate(0, 0, -1))
+        self.floor.transform = tr.scale(200, 200, 1)
         self.root.childs += [self.scenario]
 
         # Buildings
@@ -93,6 +96,29 @@ class Scene:
         build_model2.texture = sh.textureSimpleSetup(ASSETS["build2_tex"], *tex_params)
         build2.childs += [build_model2]
         self.scenario.childs += [build2]
+
+        # Ring
+        ring = sg.SceneGraphNode("ring")
+        ring_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ring_obj"]))
+        ring_model.texture = sh.textureSimpleSetup(ASSETS["ring_tex"], *tex_params)
+        ring.childs += [ring_model]
+        self.scenario.childs += [ring]
+
+        # Coin
+        coin = sg.SceneGraphNode("coin")
+        coin_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["coin_obj"]))
+        coin_model.texture = sh.textureSimpleSetup(ASSETS["ring_tex"], *tex_params)
+        coin.childs += [coin_model]
+        self.scenario.childs += [coin]
+
+        # Among Us
+        among_us = sg.SceneGraphNode("among_us")
+        among_us_transform = [tr.translate(9, -1, 2), tr.uniformScale(2.0), tr.rotationZ(np.pi/2), tr.rotationX(np.pi/2)]
+        among_us.transform = tr.matmul(among_us_transform)
+        among_us_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["among_us_obj"]))
+        among_us_model.texture = sh.textureSimpleSetup(ASSETS["among_us_tex"], *tex_params)
+        among_us.childs += [among_us_model]
+        self.scenario.childs += [among_us]
 
 # Camera which controls the projection and view
 class Camera:
@@ -207,6 +233,16 @@ def on_draw():
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2.0, -2.0, 0.0)]+ship_rot)
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2.0, 2.0, 0.0)]+ship_rot)
     scene.squad.transform = tr.matmul(ship_move)
+
+    # Ring movement
+    ring = sg.findNode(scene.root, "ring")
+    ring_transform = [tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.3)]
+    ring.transform = tr.matmul(ring_transform)
+
+    # Coin movement
+    coin = sg.findNode(scene.root, "coin")
+    coin_transform = [tr.translate(-2, 10, 3+np.sin(controller.total_time)*0.5), tr.uniformScale(0.7), tr.rotationZ(controller.total_time)]
+    coin.transform = tr.matmul(coin_transform)
 
     # Camera tracking of the ship
     camera.update(ship_coords)
