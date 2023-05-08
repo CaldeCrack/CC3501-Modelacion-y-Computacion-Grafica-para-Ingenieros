@@ -170,7 +170,7 @@ class Movement:
         self.y_angle = 0 # theta
         self.z_angle = 0 # phi
 
-    # Move the ship #* agregar limites de mapa
+    # Move the ship
     def update(self):
         # Update facing angle of the ship
         self.rotation_y += self.y_angle*0.1
@@ -215,7 +215,6 @@ def on_key_press(symbol, modifiers):
 # What happens when the user releases these keys
 @controller.event
 def on_key_release(symbol, modifiers):
-    print(modifiers)
     if symbol == pyglet.window.key.A: movement.z_angle -= 1
     if symbol == pyglet.window.key.D: movement.z_angle += 1
     if symbol == pyglet.window.key.W: movement.x_direction -= 1
