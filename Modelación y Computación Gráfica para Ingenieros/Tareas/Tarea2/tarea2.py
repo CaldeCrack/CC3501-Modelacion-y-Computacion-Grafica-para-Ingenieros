@@ -121,10 +121,11 @@ class Scene:
         ring_model.texture = sh.textureSimpleSetup(ASSETS["ring_tex"], *tex_params)
         ring.childs += [ring_model]
         self.scenario.childs += [ring]
-        ring_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ring_obj"]))
+        ring_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ring_obj"])) # Ring shadow
         ring_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *tex_params)
         self.ringShadow = sg.SceneGraphNode("ringShadow")
         self.ringShadow.childs += [ring_shadow_obj]
+        self.scenario.childs += [self.ringShadow]
 
         # Coin
         coin = sg.SceneGraphNode("coin")
@@ -132,6 +133,11 @@ class Scene:
         coin_model.texture = sh.textureSimpleSetup(ASSETS["ring_tex"], *tex_params)
         coin.childs += [coin_model]
         self.scenario.childs += [coin]
+        coin_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["coin_obj"])) # Coin shadow
+        coin_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *tex_params)
+        self.coinShadow = sg.SceneGraphNode("coinShadow")
+        self.coinShadow.childs += [coin_shadow_obj]
+        self.scenario.childs += [self.coinShadow]
 
         # Among Us
         among_us = sg.SceneGraphNode("among_us")
@@ -238,8 +244,8 @@ def on_key_release(symbol, modifiers):
 
 @controller.event
 def on_mouse_motion(x, y, dx, dy):
-    if dy>0: movement.y_angle = -1
-    if dy<0: movement.y_angle = 1
+    if dy>0: movement.y_angle = -0.6
+    if dy<0: movement.y_angle = 0.6
 
 # What draws at every frame
 @controller.event
@@ -252,26 +258,27 @@ def on_draw():
     movement.update()
     ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
     ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
-    scene.shipRotation.transform = tr.matmul(ship_rot)
-    scene.shipRotation2.transform = tr.matmul([tr.translate(-2.0, -2.0, 0.0)]+ship_rot)
-    scene.shipRotation3.transform = tr.matmul([tr.translate(-2.0, 2.0, 0.0)]+ship_rot)
+    # scene.shipRotation.transform = tr.matmul(ship_rot)
+    scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0.0)])
+    scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0.0)])
 
     # Shadows
-    scene.shipRotationShadow.transform = tr.matmul([tr.translate(0, 0, 0.1-movement.eye[2])]+[ tr.scale(1, 1, 0.1)]+ship_rot)
-    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(-2, -2, 0.1-movement.eye[2])]+[ tr.scale(1, 1, 0.1)]+ship_rot)
-    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(-2, 2, 0.1-movement.eye[2])]+[ tr.scale(1, 1, 0.1)]+ship_rot)
-    scene.squad.transform = tr.matmul(ship_move) # Start movement of the ships
+    scene.shipRotationShadow.transform = tr.matmul([tr.translate(0, 0, 0.1-movement.eye[2])]+[tr.scale(1, 1, 0.1)])
+    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(-2, -2, 0.1-movement.eye[2])]+[tr.scale(1, 1, 0.1)])
+    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(-2, 2, 0.1-movement.eye[2])]+[tr.scale(1, 1, 0.1)])
+    scene.squad.transform = tr.matmul(ship_move+ship_rot) # Start movement of the ships
 
     # Ring movement
     ring = sg.findNode(scene.root, "ring")
     ring_transform = [tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.3)]
     ring.transform = tr.matmul(ring_transform)
-    scene.ringShadow.transform = tr.matmul([tr.translate(5, -4, 1), tr.scale(2,2,0.1), tr.rotationZ(controller.total_time*0.3)])
+    scene.ringShadow.transform = tr.matmul([tr.translate(5, -4, 1), tr.scale(2, 2, 0.1), tr.rotationZ(controller.total_time*0.3)])
 
     # Coin movement
     coin = sg.findNode(scene.root, "coin")
     coin_transform = [tr.translate(-2, 10, 3+np.sin(controller.total_time)*0.5), tr.uniformScale(0.7), tr.rotationZ(controller.total_time)]
     coin.transform = tr.matmul(coin_transform)
+    scene.coinShadow.transform = tr.matmul([tr.translate(-2, 10, 0.1), tr.scale(0.7, 0.7, 0.1), tr.rotationZ(controller.total_time*0.3)])
 
     # Camera tracking of the ship
     camera.update(movement.eye)
