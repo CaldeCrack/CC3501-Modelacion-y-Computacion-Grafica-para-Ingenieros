@@ -1,5 +1,4 @@
 # coding=utf-8
-# Useful imports
 import sys
 import os
 import pyglet
@@ -149,6 +148,11 @@ class Scene:
         among_us_model.texture = sh.textureSimpleSetup(ASSETS["among_us_tex"], *tex_params)
         among_us.childs += [among_us_model]
         self.scenario.childs += [among_us]
+        among_us_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["among_us_obj"])) # Among Us shadow
+        among_us_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *tex_params)
+        self.amongUsShadow = sg.SceneGraphNode("amongUsShadow")
+        self.amongUsShadow.childs += [among_us_shadow_obj]
+        self.scenario.childs += [self.amongUsShadow]
 
 # Camera which controls the projection and view
 class Camera:
@@ -157,20 +161,18 @@ class Camera:
         self.at = at
         self.eye = eye
         self.up = up
+        self.projection = ORTHO
 
         # Cartesian coordinates
         self.x = np.square(self.eye[0])
         self.y = np.square(self.eye[1])
         self.z = np.square(self.eye[2])
 
-        self.projection = ORTHO
-
     # Follow the ship
     def update(self, coords):
         self.eye[0] = self.x+coords[0]
         self.eye[1] = self.y+coords[1]
         self.eye[2] = self.z+coords[2]
-
         self.at[0] = coords[0]
         self.at[1] = coords[1]
         self.at[2] = coords[2]
@@ -199,7 +201,7 @@ class Movement:
         self.rotation_y += self.y_angle*0.1
         self.rotation_z += self.z_angle*0.1
 
-        # Move in the local x axis (and hover a little bit) (and set the limits of the map)
+        # Move in the local x axis, hover a little bit and set the limits of the map
         if np.abs(self.eye[0]) < 50: self.eye[0] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*np.cos(self.rotation_z)*self.speed
         elif self.eye[0] >= 50: self.eye[0] -= 0.01
         else: self.eye[0] += 0.01
@@ -208,7 +210,7 @@ class Movement:
         else: self.eye[1] += 0.01
         if self.eye[2] < 20 and self.eye[2] > 0.3: self.eye[2] += (self.x_direction*np.sin(self.rotation_y)*-1+np.cos(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*self.speed
         elif self.eye[2] >= 20: self.eye[2] -= 0.01
-        elif self.eye[2] <= 0.3: self.eye[2] += 0.01
+        else: self.eye[2] += 0.01
 
         # Stop rotation with the mouse
         movement.y_angle = 0
@@ -264,9 +266,7 @@ def on_draw():
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0.0)])
 
     # Shadows
-    ship1 = sg.findPosition(scene.squad, "shipRotation")
-    ship2 = sg.findPosition(scene.squad, "shipRotation2")
-    ship3 = sg.findPosition(scene.squad, "shipRotation3")
+    ship1, ship2, ship3 = sg.findPosition(scene.squad, "shipRotation"), sg.findPosition(scene.squad, "shipRotation2"), sg.findPosition(scene.squad, "shipRotation3")
     scene.shipRotationShadow.transform = tr.matmul([tr.translate(ship1[0][0], ship1[1][0], 0.1)]+[tr.scale(1, 1, 0.01)]+ship_rot)
     scene.shipRotationShadow2.transform = tr.matmul([tr.translate(ship2[0][0], ship2[1][0], 0.1)]+[tr.scale(1, 1, 0.01)]+ship_rot)
     scene.shipRotationShadow3.transform = tr.matmul([tr.translate(ship3[0][0], ship3[1][0], 0.1)]+[tr.scale(1, 1, 0.01)]+ship_rot)
@@ -274,25 +274,22 @@ def on_draw():
 
     # Ring movement
     ring = sg.findNode(scene.root, "ring")
-    ring_transform = [tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.3)]
-    ring.transform = tr.matmul(ring_transform)
-    scene.ringShadow.transform = tr.matmul([tr.translate(5, -4, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(controller.total_time*0.3)])
+    ring.transform = tr.matmul(tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.3))
+    scene.ringShadow.transform = tr.matmul([tr.translate(5, -4, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(controller.total_time*0.3)]) # Ring shadow
 
     # Coin movement
     coin = sg.findNode(scene.root, "coin")
-    coin_transform = [tr.translate(-2, 10, 3+np.sin(controller.total_time)*0.5), tr.uniformScale(0.7), tr.rotationZ(controller.total_time)]
-    coin.transform = tr.matmul(coin_transform)
-    scene.coinShadow.transform = tr.matmul([tr.translate(-2, 10, 0.1), tr.scale(0.7, 0.7, 0.01), tr.rotationZ(controller.total_time*0.3)])
+    coin.transform = tr.matmul(tr.translate(-2, 10, 3+np.sin(controller.total_time)*0.5), tr.uniformScale(0.7), tr.rotationZ(controller.total_time))
+    scene.coinShadow.transform = tr.matmul([tr.translate(-2, 10, 0.1), tr.scale(0.7, 0.7, 0.01), tr.rotationZ(controller.total_time*0.3)]) # Coin shadow
 
-    # Camera tracking of the ship
+    # Among Us shadow
+    scene.amongUsShadow.transform = tr.matmul([tr.translate(9, -1, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(np.pi), tr.rotationX(np.pi/2)])
+
+    # Camera tracking of the ship, projection and view
     camera.update(movement.eye)
-
-    # Projection and view
     view = tr.lookAt(camera.eye, camera.at, camera.up)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
-
-    # Drawing of the scene graph
     sg.drawSceneGraphNode(scene.root, scene.pipeline, "model")
 
 # Set a time in controller
