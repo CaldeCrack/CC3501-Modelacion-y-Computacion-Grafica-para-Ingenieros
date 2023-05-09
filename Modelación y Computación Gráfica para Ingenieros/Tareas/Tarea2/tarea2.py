@@ -7,7 +7,6 @@ import libs.shaders as sh
 import libs.transformations as tr
 import libs.scene_graph as sg
 import libs.shapes as shp
-# import libs.lighting_shaders as ls
 
 from libs.gpu_shape import createGPUShape
 from libs.obj_handler import read_OBJ2
