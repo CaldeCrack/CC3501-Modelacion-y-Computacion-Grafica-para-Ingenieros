@@ -7,14 +7,14 @@ import libs.shaders as sh
 import libs.transformations as tr
 import libs.scene_graph as sg
 import libs.shapes as shp
+# import libs.lighting_shaders as ls
 
 from libs.gpu_shape import createGPUShape
 from libs.obj_handler import read_OBJ2
 from libs.assets_path import getAssetPath
 from OpenGL.GL import *
 
-"""
-Controles:
+""" Controles:
     W/S: move forward/backward
     A/D: turn left/right
     move mouse up/down: turn up/down
@@ -246,6 +246,7 @@ def on_key_release(symbol, modifiers):
     if symbol == pyglet.window.key.S: movement.x_direction += 1
     if modifiers == pyglet.window.key.MOD_SHIFT-1: movement.speed = 0.15 # for some reason is a different value on release (at least in my pc)
 
+# What happens when the user moves the mouse
 @controller.event
 def on_mouse_motion(x, y, dx, dy):
     if dy>0: movement.y_angle = -0.6
@@ -274,12 +275,12 @@ def on_draw():
 
     # Ring movement
     ring = sg.findNode(scene.root, "ring")
-    ring.transform = tr.matmul(tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.3))
+    ring.transform = tr.matmul([tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.3)])
     scene.ringShadow.transform = tr.matmul([tr.translate(5, -4, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(controller.total_time*0.3)]) # Ring shadow
 
     # Coin movement
     coin = sg.findNode(scene.root, "coin")
-    coin.transform = tr.matmul(tr.translate(-2, 10, 3+np.sin(controller.total_time)*0.5), tr.uniformScale(0.7), tr.rotationZ(controller.total_time))
+    coin.transform = tr.matmul([tr.translate(-2, 10, 3+np.sin(controller.total_time)*0.5), tr.uniformScale(0.7), tr.rotationZ(controller.total_time)])
     scene.coinShadow.transform = tr.matmul([tr.translate(-2, 10, 0.1), tr.scale(0.7, 0.7, 0.01), tr.rotationZ(controller.total_time*0.3)]) # Coin shadow
 
     # Among Us shadow
