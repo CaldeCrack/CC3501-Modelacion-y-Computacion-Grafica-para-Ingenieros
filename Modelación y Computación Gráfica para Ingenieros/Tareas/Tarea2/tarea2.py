@@ -80,13 +80,15 @@ class Scene:
         self.squad.childs += [self.shipRotation, self.shipRotation2, self.shipRotation3] # Add ships
 
         # Shadows
+        self.ship_shadows = sg.SceneGraphNode("ship_shadows")
         self.shipRotationShadow = sg.SceneGraphNode("shipRotationShadow") # Main ship
         self.shipRotationShadow.childs += [ship_shadow_obj]
         self.shipRotationShadow2 = sg.SceneGraphNode("shipRotationShadow2") # Side ships
         self.shipRotationShadow2.childs += [ship_shadow_obj]
         self.shipRotationShadow3 = sg.SceneGraphNode("shipRotationShadow3")
         self.shipRotationShadow3.childs += [ship_shadow_obj]
-        self.squad.childs += [self.shipRotationShadow, self.shipRotationShadow2, self.shipRotationShadow3] # Add shadows
+        self.ship_shadows.childs += [self.shipRotationShadow, self.shipRotationShadow2, self.shipRotationShadow3] # Add shadows
+        self.root.childs += [self.ship_shadows]
 
         # --- Scenery ---
         # Floor
@@ -258,27 +260,29 @@ def on_draw():
     movement.update()
     ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
     ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
-    # scene.shipRotation.transform = tr.matmul(ship_rot)
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0.0)])
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0.0)])
 
     # Shadows
-    scene.shipRotationShadow.transform = tr.matmul([tr.translate(0, 0, 0.1-movement.eye[2])]+[tr.scale(1, 1, 0.1)])
-    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(-2, -2, 0.1-movement.eye[2])]+[tr.scale(1, 1, 0.1)])
-    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(-2, 2, 0.1-movement.eye[2])]+[tr.scale(1, 1, 0.1)])
+    ship1 = sg.findPosition(scene.squad, "shipRotation")
+    ship2 = sg.findPosition(scene.squad, "shipRotation2")
+    ship3 = sg.findPosition(scene.squad, "shipRotation3")
+    scene.shipRotationShadow.transform = tr.matmul([tr.translate(ship1[0][0], ship1[1][0], 0.1)]+[tr.scale(1, 1, 0.01)]+ship_rot)
+    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(ship2[0][0], ship2[1][0], 0.1)]+[tr.scale(1, 1, 0.01)]+ship_rot)
+    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(ship3[0][0], ship3[1][0], 0.1)]+[tr.scale(1, 1, 0.01)]+ship_rot)
     scene.squad.transform = tr.matmul(ship_move+ship_rot) # Start movement of the ships
 
     # Ring movement
     ring = sg.findNode(scene.root, "ring")
     ring_transform = [tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.3)]
     ring.transform = tr.matmul(ring_transform)
-    scene.ringShadow.transform = tr.matmul([tr.translate(5, -4, 1), tr.scale(2, 2, 0.1), tr.rotationZ(controller.total_time*0.3)])
+    scene.ringShadow.transform = tr.matmul([tr.translate(5, -4, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(controller.total_time*0.3)])
 
     # Coin movement
     coin = sg.findNode(scene.root, "coin")
     coin_transform = [tr.translate(-2, 10, 3+np.sin(controller.total_time)*0.5), tr.uniformScale(0.7), tr.rotationZ(controller.total_time)]
     coin.transform = tr.matmul(coin_transform)
-    scene.coinShadow.transform = tr.matmul([tr.translate(-2, 10, 0.1), tr.scale(0.7, 0.7, 0.1), tr.rotationZ(controller.total_time*0.3)])
+    scene.coinShadow.transform = tr.matmul([tr.translate(-2, 10, 0.1), tr.scale(0.7, 0.7, 0.01), tr.rotationZ(controller.total_time*0.3)])
 
     # Camera tracking of the ship
     camera.update(movement.eye)
