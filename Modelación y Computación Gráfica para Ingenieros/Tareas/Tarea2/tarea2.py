@@ -27,7 +27,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
     "ring_obj": getAssetPath("ring.obj"), "ring_tex": getAssetPath("ring.png"), # ---
-    "coin_obj": getAssetPath("coin.obj"), # ---
+    "coin_obj": getAssetPath("coin.obj"), "black_tex": getAssetPath("black.png"), # ---
     "cube_obj": getAssetPath("cube.obj"), "cube_tex": getAssetPath("dirt_1.png"), # texture by Screaming Brain Studios
     "among_us_obj": getAssetPath("among_us.obj"), "among_us_tex": getAssetPath("among_us.png"), # model and texture by Vilitay
     "build1_obj": getAssetPath("build1.obj"), "build1_tex": getAssetPath("build1.png"), # models and textures by Mykhailo Ohorodnichuk
@@ -65,6 +65,8 @@ class Scene:
         # --- Squad ---
         ship_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ship_obj"]))
         ship_obj.texture = sh.textureSimpleSetup(ASSETS["ship_tex"], *tex_params)
+        ship_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ship_obj"]))
+        ship_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *tex_params)
         self.squad = sg.SceneGraphNode("squad")
         self.root.childs += [self.squad]
 
@@ -75,7 +77,16 @@ class Scene:
         self.shipRotation2.childs += [ship_obj]
         self.shipRotation3 = sg.SceneGraphNode("shipRotation3")
         self.shipRotation3.childs += [ship_obj]
-        self.squad.childs += [self.shipRotation, self.shipRotation2, self.shipRotation3]
+        self.squad.childs += [self.shipRotation, self.shipRotation2, self.shipRotation3] # Add ships
+
+        # Shadows
+        self.shipRotationShadow = sg.SceneGraphNode("shipRotationShadow") # Main ship
+        self.shipRotationShadow.childs += [ship_shadow_obj]
+        self.shipRotationShadow2 = sg.SceneGraphNode("shipRotationShadow2") # Side ships
+        self.shipRotationShadow2.childs += [ship_shadow_obj]
+        self.shipRotationShadow3 = sg.SceneGraphNode("shipRotationShadow3")
+        self.shipRotationShadow3.childs += [ship_shadow_obj]
+        self.squad.childs += [self.shipRotationShadow, self.shipRotationShadow2, self.shipRotationShadow3] # Add shadows
 
         # --- Scenery ---
         # Floor
@@ -110,6 +121,10 @@ class Scene:
         ring_model.texture = sh.textureSimpleSetup(ASSETS["ring_tex"], *tex_params)
         ring.childs += [ring_model]
         self.scenario.childs += [ring]
+        ring_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ring_obj"]))
+        ring_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *tex_params)
+        self.ringShadow = sg.SceneGraphNode("ringShadow")
+        self.ringShadow.childs += [ring_shadow_obj]
 
         # Coin
         coin = sg.SceneGraphNode("coin")
@@ -240,12 +255,18 @@ def on_draw():
     scene.shipRotation.transform = tr.matmul(ship_rot)
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2.0, -2.0, 0.0)]+ship_rot)
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2.0, 2.0, 0.0)]+ship_rot)
-    scene.squad.transform = tr.matmul(ship_move)
+
+    # Shadows
+    scene.shipRotationShadow.transform = tr.matmul([tr.translate(0, 0, 0.1-movement.eye[2])]+[ tr.scale(1, 1, 0.1)]+ship_rot)
+    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(-2, -2, 0.1-movement.eye[2])]+[ tr.scale(1, 1, 0.1)]+ship_rot)
+    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(-2, 2, 0.1-movement.eye[2])]+[ tr.scale(1, 1, 0.1)]+ship_rot)
+    scene.squad.transform = tr.matmul(ship_move) # Start movement of the ships
 
     # Ring movement
     ring = sg.findNode(scene.root, "ring")
     ring_transform = [tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.3)]
     ring.transform = tr.matmul(ring_transform)
+    scene.ringShadow.transform = tr.matmul([tr.translate(5, -4, 1), tr.scale(2,2,0.1), tr.rotationZ(controller.total_time*0.3)])
 
     # Coin movement
     coin = sg.findNode(scene.root, "coin")
@@ -254,9 +275,6 @@ def on_draw():
 
     # Camera tracking of the ship
     camera.update(movement.eye)
-
-    #! Illumination or something
-    # glEnable(GL_LIGHTING)
 
     # Projection and view
     view = tr.lookAt(camera.eye, camera.at, camera.up)
