@@ -234,7 +234,7 @@ def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.W: movement.x_direction += 1
     if symbol == pyglet.window.key.S: movement.x_direction -= 1
     # the value of modifier when I press shift sometimes is 17 and other times is 1 (16 and 0 on release) and idk why
-    # MOD_SHIFT doesn't always get the right value
+    # pyglet.window.key.MOD_SHIFT doesn't always get the right value
     if modifiers == 17: movement.speed = 0.3
     # Close the window
     if symbol == pyglet.window.key.ESCAPE: controller.close()
