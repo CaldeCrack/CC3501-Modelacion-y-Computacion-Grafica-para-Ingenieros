@@ -7,6 +7,7 @@ import libs.shaders as sh
 import libs.transformations as tr
 import libs.scene_graph as sg
 import libs.shapes as shp
+import libs.lighting_shaders as ls
 
 from libs.gpu_shape import createGPUShape
 from libs.obj_handler import read_OBJ2
@@ -56,7 +57,7 @@ class Controller(pyglet.window.Window):
 class Scene:
     def __init__(self) -> None:
         # Initial setup of the scene
-        self.pipeline = sh.SimpleTextureModelViewProjectionShaderProgram()
+        self.pipeline = ls.SimpleTexturePhongShaderProgram()
         self.root = sg.SceneGraphNode("root")
         tex_params = TEX
 
@@ -232,7 +233,9 @@ def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.D: movement.z_angle -= 1
     if symbol == pyglet.window.key.W: movement.x_direction += 1
     if symbol == pyglet.window.key.S: movement.x_direction -= 1
-    if modifiers == pyglet.window.key.MOD_SHIFT: movement.speed = 0.3
+    # the value of modifier when I press shift sometimes is 17 and other times is 1 (16 and 0 on release) and idk why
+    # MOD_SHIFT doesn't always get the right value
+    if modifiers == 17: movement.speed = 0.3
     # Close the window
     if symbol == pyglet.window.key.ESCAPE: controller.close()
 
@@ -243,7 +246,7 @@ def on_key_release(symbol, modifiers):
     if symbol == pyglet.window.key.D: movement.z_angle += 1
     if symbol == pyglet.window.key.W: movement.x_direction -= 1
     if symbol == pyglet.window.key.S: movement.x_direction += 1
-    if modifiers == pyglet.window.key.MOD_SHIFT-1: movement.speed = 0.15 # for some reason is a different value on release (at least in my pc)
+    if modifiers == 16: movement.speed = 0.15
 
 # What happens when the user moves the mouse
 @controller.event
@@ -284,6 +287,20 @@ def on_draw():
 
     # Among Us shadow
     scene.amongUsShadow.transform = tr.matmul([tr.translate(9, -1, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(np.pi), tr.rotationX(np.pi/2)])
+
+    # Lighting shader
+    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "La"), 0.8, 0.8, 0.8)
+    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ld"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ls"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ka"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Kd"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ks"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "lightPosition"), 0, 0, 25)
+    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "viewPosition"), camera.eye[0], camera.eye[1], camera.eye[2])
+    glUniform1ui(glGetUniformLocation(scene.pipeline.shaderProgram, "shininess"), 200)
+    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "constantAttenuation"), 0.00001)
+    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "linearAttenuation"), 0.03)
+    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "quadraticAttenuation"), 0.03)
 
     # Camera tracking of the ship, projection and view
     camera.update(movement.eye)
