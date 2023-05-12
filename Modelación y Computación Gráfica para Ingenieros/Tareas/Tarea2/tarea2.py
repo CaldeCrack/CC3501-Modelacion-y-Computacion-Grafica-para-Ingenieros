@@ -156,7 +156,7 @@ class Scene:
 
 # Camera which controls the projection and view
 class Camera:
-    def __init__(self, at=np.array([0.0, 0.0, 0.0]), eye=np.array([5.0, 5.0, 5.0]), up=np.array([0.0, 0.0, 1.0])) -> None:
+    def __init__(self, at=np.array([0.0, 0.0, 0.0]), eye=np.array([5.0, 5.0, 5.0]), up=np.array([-0.577, -0.577, 0.577])) -> None:
         # View parameters
         self.at = at
         self.eye = eye
@@ -290,17 +290,17 @@ def on_draw():
 
     # Lighting shader
     glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "La"), 0.8, 0.8, 0.8)
-    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ld"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ld"), 0.9, 0.9, 0.9)
     glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ls"), 1, 1, 1)
     glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ka"), 1, 1, 1)
     glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Kd"), 1, 1, 1)
     glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ks"), 1, 1, 1)
     glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "lightPosition"), 0, 0, 25)
     glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "viewPosition"), camera.eye[0], camera.eye[1], camera.eye[2])
-    glUniform1ui(glGetUniformLocation(scene.pipeline.shaderProgram, "shininess"), 200)
-    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "constantAttenuation"), 0.00001)
-    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "linearAttenuation"), 0.03)
-    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "quadraticAttenuation"), 0.03)
+    glUniform1ui(glGetUniformLocation(scene.pipeline.shaderProgram, "shininess"), 300)
+    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "constantAttenuation"), 0.1)
+    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "linearAttenuation"), 0.1)
+    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "quadraticAttenuation"), 0.01)
 
     # Camera tracking of the ship, projection and view
     camera.update(movement.eye)
