@@ -99,7 +99,7 @@ projection = tr.ortho(-8, 8, -8, 8, 0.1, 100)
 
 # Definimos una variable para tener el
 # numero de iteraciones que consideraremos
-N = 3000
+N = 1000
 
 # Creando una curva de Hermite
 # Definimos los puntos
