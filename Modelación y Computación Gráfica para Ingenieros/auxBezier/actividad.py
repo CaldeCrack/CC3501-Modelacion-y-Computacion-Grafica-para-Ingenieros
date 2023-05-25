@@ -235,7 +235,7 @@ def on_draw():
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "model"), 1, GL_TRUE, transformRainbow)
     controller.pipeline.drawCall(gpuRainbowCube)
 
-    transformGreen = tr.matmul([tr.translate(HermiteCurveFinal[controller.step, 0], HermiteCurveFinal[controller.step, 1], HermiteCurveFinal[controller.step, 2])])
+    transformGreen = tr.matmul([tr.translate(HermiteCurveFinal[controller.step*4, 0], HermiteCurveFinal[controller.step*4, 1], HermiteCurveFinal[controller.step*4, 2])])
     glUniformMatrix4fv(glGetUniformLocation(controller.pipeline.shaderProgram, "model"), 1, GL_TRUE, transformGreen)
     controller.pipeline.drawCall(gpuGreenCube)
 
