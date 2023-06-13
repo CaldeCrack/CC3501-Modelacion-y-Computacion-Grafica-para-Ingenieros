@@ -21,6 +21,7 @@ from OpenGL.GL import *
 
 # Initial data
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+n=0
 N=100
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
@@ -279,6 +280,7 @@ glUseProgram(scene.pipeline.shaderProgram)
 @controller.event
 def on_key_press(symbol, modifiers):
     global HermiteCurve
+    global n
     # reproduction
     if symbol == pyglet.window.key._1:movement.curving = not movement.curving
     # everything else
@@ -292,12 +294,15 @@ def on_key_press(symbol, modifiers):
             angle = np.array([[np.cos(rot_y)*np.cos(rot_z), np.cos(rot_y)*np.sin(rot_z), -np.sin(rot_y)]]).T
             control_points[0].append(point)
             control_points[1].append(angle)
-            if len(control_points[0]) > 2:
+            lenC = len(control_points[0])
+            if lenC > 2:
                 GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2], angle*-1)
                 HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
+                n += N
             elif len(control_points[0]) == 2:
                 GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2], angle*-1)
                 HermiteCurve = evalCurve(GMh, N)
+                n += N
         if symbol == pyglet.window.key.A: movement.z_angle += 1
         if symbol == pyglet.window.key.D: movement.z_angle -= 1
         if symbol == pyglet.window.key.W: movement.x_direction += 1
@@ -328,7 +333,7 @@ def on_mouse_motion(x, y, dx, dy):
 @controller.event
 def on_draw():
     # step update
-    if controller.step >= N-1: controller.step = 0
+    if controller.step >= n-1: controller.step = 0
     controller.step += 1
 
     # Clear window every frame
@@ -338,8 +343,7 @@ def on_draw():
     # Ships movement
     movement.update()
     if movement.curving: # ship through the curve
-        checkpoints = len(control_points[0])-1
-        ship_move = tr.matmul([tr.translate(HermiteCurve[controller.step*checkpoints, 0], HermiteCurve[controller.step*checkpoints, 1], HermiteCurve[controller.step*checkpoints, 2])])
+        ship_move = tr.matmul([tr.translate(HermiteCurve[controller.step, 0], HermiteCurve[controller.step, 1], HermiteCurve[controller.step, 2])])
         ship_rot = [tr.rotationZ(0), tr.rotationY(0)]
     else: # ship free movement
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
