@@ -198,7 +198,6 @@ class Camera:
             self.eye[2] = eye[2][0]
             self.at = [at[0][0], at[1][0], at[2][0]]
             self.up = [0, 0, up[2][0]-eye[2][0]]
-            #print(self.up)
 
 # Movement of the ships
 class Movement:
