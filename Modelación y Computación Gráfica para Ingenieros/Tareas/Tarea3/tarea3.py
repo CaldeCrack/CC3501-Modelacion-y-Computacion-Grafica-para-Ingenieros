@@ -1,7 +1,5 @@
 # coding=utf-8
-import sys
-import os
-import pyglet
+import sys, os, pyglet
 import numpy as np
 import libs.shaders as sh
 import libs.transformations as tr
@@ -39,7 +37,6 @@ display = pyglet.canvas.Display()
 screen = display.get_default_screen()
 screen_height = screen.height
 screen_width = screen.width
-#ORTHO = tr.ortho(-10*screen_width/screen_height, 10*screen_width/screen_height, -10, 10, 0.1, 100)
 PROJECTIONS = [
     tr.ortho(-10*screen_width/screen_height, 10*screen_width/screen_height, -10, 10, 0.1, 100),  # ORTOGRAPHIC_PROJECTION
     tr.perspective(100, float(screen_width)/float(screen_height), 0.1, 100)  # PERSPECTIVE_PROJECTION
@@ -80,10 +77,11 @@ class Scene:
         self.shipRotation2.childs += [ship_obj]
         self.shipRotation3 = sg.SceneGraphNode("shipRotation3")
         self.shipRotation3.childs += [ship_obj]
-        # Perspective camera and up
-        self.perspective = sg.SceneGraphNode("perspective")
+        # Perspective camera
+        self.eye = sg.SceneGraphNode("eye")
+        self.at = sg.SceneGraphNode("at")
         self.up = sg.SceneGraphNode("up")
-        self.squad.childs += [self.shipRotation, self.shipRotation2, self.shipRotation3, self.perspective, self.up] # Add ships
+        self.squad.childs += [self.shipRotation, self.shipRotation2, self.shipRotation3, self.eye, self.up, self.at] # Add ships
 
         # Shadows
         self.ship_shadows = sg.SceneGraphNode("ship_shadows")
@@ -149,7 +147,7 @@ class Scene:
 
         # Among Us
         among_us = sg.SceneGraphNode("among_us")
-        among_us_transform = [tr.translate(9, -1, 1.5), tr.uniformScale(2.0), tr.rotationZ(np.pi), tr.rotationX(np.pi/2)]
+        among_us_transform = [tr.translate(9, -1, 1.6), tr.uniformScale(2.0), tr.rotationZ(np.pi), tr.rotationX(np.pi/2)]
         among_us.transform = tr.matmul(among_us_transform)
         among_us_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["among_us_obj"]))
         among_us_model.texture = sh.textureSimpleSetup(ASSETS["among_us_tex"], *tex_params)
@@ -185,7 +183,7 @@ class Camera:
         self.projection = self.available_projections[self.proj]
 
     # Follow the ship
-    def update(self, move, perspective, up):
+    def update(self, move, eye, at, up):
         if(self.proj==0): # orthographic projection
             self.up = np.array([-0.577, -0.577, 0.577])
             self.eye[0] = self.x+move.eye[0]
@@ -195,13 +193,12 @@ class Camera:
             self.at[1] = move.eye[1]
             self.at[2] = move.eye[2]
         else: # perspective projection
-            self.eye[0] = perspective[0][0]
-            self.eye[1] = perspective[1][0]
-            self.eye[2] = perspective[2][0]
-            self.at[0] = move.eye[0]
-            self.at[1] = move.eye[1]
-            self.at[2] = 0.5+move.eye[2]
-            self.up = [up[0][0], up[1][0], up[2][0]]
+            self.eye[0] = eye[0][0]
+            self.eye[1] = eye[1][0]
+            self.eye[2] = eye[2][0]
+            self.at = [at[0][0], at[1][0], at[2][0]]
+            self.up = [0, 0, up[2][0]-eye[2][0]]
+            #print(self.up)
 
 # Movement of the ships
 class Movement:
@@ -294,8 +291,11 @@ def on_draw():
     ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0.0)])
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0.0)])
-    scene.perspective.transform = tr.matmul([tr.translate(-0.4, 0, 0.2)])
-    scene.perspective.transform = tr.matmul([tr.translate(-0.4, 0, 1.0)])
+
+    # Camera in perspective
+    scene.eye.transform = tr.matmul([tr.translate(0, 0, 0.5)])
+    scene.at.transform = tr.matmul([tr.translate(0.5, 0, 0.5)])
+    scene.up.transform = tr.matmul([tr.translate(0, 0, 1.0)]) #* up es el problema
 
     # Shadows
     ship1, ship2, ship3 = sg.findPosition(scene.squad, "shipRotation"), sg.findPosition(scene.squad, "shipRotation2"), sg.findPosition(scene.squad, "shipRotation3")
@@ -305,7 +305,7 @@ def on_draw():
     scene.squad.transform = tr.matmul(ship_move+ship_rot) # Start movement of the ships
 
     # Perspective position and up
-    perspective, up = sg.findPosition(scene.squad, "perspective"), sg.findPosition(scene.squad, "up")
+    eye, up, at = sg.findPosition(scene.squad, "eye"), sg.findPosition(scene.squad, "up"), sg.findPosition(scene.squad, "at")
 
     # Ring movement
     ring = sg.findNode(scene.root, "ring")
@@ -335,7 +335,7 @@ def on_draw():
     glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "quadraticAttenuation"), 0.01)
 
     # Camera tracking of the ship, projection and view
-    camera.update(movement, perspective, up)
+    camera.update(movement, eye, at, up)
     view = tr.lookAt(camera.eye, camera.at, camera.up)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
