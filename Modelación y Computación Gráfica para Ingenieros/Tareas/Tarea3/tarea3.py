@@ -264,6 +264,7 @@ scene = Scene()
 camera = Camera()
 movement = Movement()
 control_points = [[], []] # Coordenates, angles
+HermiteCurve = None
 
 # Camera setup
 glClearColor(0.05, 0.05, 0.1, 1.0)
@@ -273,10 +274,21 @@ glUseProgram(scene.pipeline.shaderProgram)
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
-    if symbol == pyglet.window.key.C: camera.set_projection()
+    # Checkpoints
     if symbol == pyglet.window.key.R:
-        control_points[0].append(movement.eye)
-        control_points[1].append([movement.rotation_y, movement.rotation_z])
+        point = np.array([movement.eye[0], movement.eye[1], movement.eye[2]]).T
+        rot_y = movement.rotation_y
+        rot_z = movement.rotation_z
+        angle = np.array([np.cos(rot_y)*np.cos(rot_z), np.cos(rot_y)*np.sin(rot_z), np.sin(rot_y)*-1]).T
+        control_points[0].append(point)
+        control_points[1].append(angle)
+        if len(control_points[0]) > 2:
+            GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2].T, angle*-1)
+            HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
+        elif len(control_points[0]) == 2:
+            GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2].T, angle*-1)
+            HermiteCurve = evalCurve(GMh, N)
+    if symbol == pyglet.window.key.C: camera.set_projection()
     if symbol == pyglet.window.key.A: movement.z_angle += 1
     if symbol == pyglet.window.key.D: movement.z_angle -= 1
     if symbol == pyglet.window.key.W: movement.x_direction += 1
