@@ -23,12 +23,6 @@ from OpenGL.GL import *
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 n=0
 N=100
-p1 = None
-p2 = None
-t1 = None
-t2 = None
-t3 = None
-t4 = None
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
     "ring_obj": getAssetPath("ring.obj"), "ring_tex": getAssetPath("ring.png"), # ---
@@ -253,7 +247,7 @@ class Movement:
     def update(self):
         # Update facing angle of the ship
         self.rotation_y += self.y_angle*0.1
-        self.rotation_z += self.z_angle*0.1
+        self.rotation_z += self.z_angle*0.05
 
         # Move in the local x axis, hover a little bit and set the limits of the map
         if np.abs(self.eye[0]) < 50: self.eye[0] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*np.cos(self.rotation_z)*self.speed
@@ -290,7 +284,7 @@ def on_key_press(symbol, modifiers):
     # reproduction
     if symbol == pyglet.window.key._1:
         vector = control_points[0][-1]-control_points[0][-3]
-        GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], vector, -control_points[1][-1])
+        GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], -control_points[1][-1])
         HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
         n += N
         movement.curving = not movement.curving
@@ -306,10 +300,11 @@ def on_key_press(symbol, modifiers):
             control_points[0].append(point)
             control_points[1].append(angle)
             lenC = len(control_points[0])
-            if lenC > 2: #* catmull-rom
+            if lenC > 2: #! alo error aqui
                 vector = point-control_points[0][-3]
-                GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], vector, -vector)
-                HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
+                control_points[1][-2] = vector
+                GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], control_points[1][-3], -control_points[1][-2])
+                HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0) #! error no concatena porque ta vacio HermiteCurve inicialmente
                 n += N
             elif lenC == 2: n += N
         if symbol == pyglet.window.key.A: movement.z_angle += 1
@@ -318,7 +313,7 @@ def on_key_press(symbol, modifiers):
         if symbol == pyglet.window.key.S: movement.x_direction -= 1
         # the value of modifier when I press shift sometimes is 17 and other times is 1 (16 and 0 on release) and idk why
         # pyglet.window.key.MOD_SHIFT doesn't always get the right value
-        if modifiers == pyglet.window.key.MOD_SHIFT: movement.speed = 0.3
+        if modifiers == 17: movement.speed = 0.3
     # Close the window
     if symbol == pyglet.window.key.ESCAPE: controller.close()
 
@@ -330,7 +325,7 @@ def on_key_release(symbol, modifiers):
         if symbol == pyglet.window.key.D: movement.z_angle += 1
         if symbol == pyglet.window.key.W: movement.x_direction -= 1
         if symbol == pyglet.window.key.S: movement.x_direction += 1
-        if modifiers == pyglet.window.key.MOD_SHIFT-1: movement.speed = 0.15
+        if modifiers == 17-1: movement.speed = 0.15
 
 # What happens when the user moves the mouse
 @controller.event
@@ -362,9 +357,9 @@ def on_draw():
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0.0)])
 
     # Camera in perspective
-    scene.eye.transform = tr.matmul([tr.translate(-0.5, 0, 0.5)])
-    scene.at.transform = tr.matmul([tr.translate(0.5, 0, 0.5)])
-    scene.up.transform = tr.matmul([tr.translate(-0.5, 0, 1.0)])
+    scene.eye.transform = tr.matmul([tr.translate(-4.0, 0, 2.0)])
+    scene.at.transform = tr.matmul([tr.translate(0.0, 0, 2.0)])
+    scene.up.transform = tr.matmul([tr.translate(-4.0, 0, 3.0)])
 
     # Shadows
     ship1, ship2, ship3 = sg.findPosition(scene.squad, "shipRotation"), sg.findPosition(scene.squad, "shipRotation2"), sg.findPosition(scene.squad, "shipRotation3")
