@@ -343,7 +343,7 @@ def on_draw():
     # Ships movement
     movement.update()
     if movement.curving: # ship through the curve
-        ship_move = tr.matmul([tr.translate(HermiteCurve[controller.step, 0], HermiteCurve[controller.step, 1], HermiteCurve[controller.step, 2])])
+        ship_move = [tr.translate(HermiteCurve[controller.step, 0], HermiteCurve[controller.step, 1], HermiteCurve[controller.step, 2])]
         ship_rot = [tr.rotationZ(0), tr.rotationY(0)]
     else: # ship free movement
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
