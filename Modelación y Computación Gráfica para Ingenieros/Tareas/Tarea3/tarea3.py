@@ -23,6 +23,12 @@ from OpenGL.GL import *
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 n=0
 N=100
+p1 = None
+p2 = None
+t1 = None
+t2 = None
+t3 = None
+t4 = None
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
     "ring_obj": getAssetPath("ring.obj"), "ring_tex": getAssetPath("ring.png"), # ---
@@ -282,7 +288,12 @@ def on_key_press(symbol, modifiers):
     global HermiteCurve
     global n
     # reproduction
-    if symbol == pyglet.window.key._1:movement.curving = not movement.curving
+    if symbol == pyglet.window.key._1:
+        vector = control_points[0][-1]-control_points[0][-3]
+        GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], vector, -control_points[1][-1])
+        HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
+        n += N
+        movement.curving = not movement.curving
     # everything else
     if symbol == pyglet.window.key.C: camera.set_projection()
     if not movement.curving:
@@ -295,14 +306,12 @@ def on_key_press(symbol, modifiers):
             control_points[0].append(point)
             control_points[1].append(angle)
             lenC = len(control_points[0])
-            if lenC > 2:
-                GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2], angle*-1)
+            if lenC > 2: #* catmull-rom
+                vector = point-control_points[0][-3]
+                GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], vector, -vector)
                 HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
                 n += N
-            elif len(control_points[0]) == 2:
-                GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2], angle*-1)
-                HermiteCurve = evalCurve(GMh, N)
-                n += N
+            elif lenC == 2: n += N
         if symbol == pyglet.window.key.A: movement.z_angle += 1
         if symbol == pyglet.window.key.D: movement.z_angle -= 1
         if symbol == pyglet.window.key.W: movement.x_direction += 1
