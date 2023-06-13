@@ -21,6 +21,7 @@ from OpenGL.GL import *
 
 # Initial data
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+N=100
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
     "ring_obj": getAssetPath("ring.obj"), "ring_tex": getAssetPath("ring.png"), # ---
@@ -43,6 +44,28 @@ PROJECTIONS = [
 ]
 TEX = [GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST]
 
+# Curve functions
+def generateT(t):
+    return np.array([[1, t, t**2, t**3]]).T
+
+def hermiteMatrix(P1, P2, T1, T2):
+    # Generate a matrix concatenating the columns
+    G = np.concatenate((P1, P2, T1, T2), axis=1)
+    # Hermite base matrix is a constant
+    Mh = np.array([[1, 0, -3, 2], [0, 0, 3, -2], [0, 1, -2, 1], [0, 0, -1, 1]])
+    return np.matmul(G, Mh)
+
+# M is the cubic curve matrix, N is the number of samples between 0 and 1
+def evalCurve(M, N):
+    # The parameter t should move between 0 and 1
+    ts = np.linspace(0.0, 1.0, N)
+    # The computed value in R3 for each sample will be stored here
+    curve = np.ndarray(shape=(N, 3), dtype=float)
+    for i in range(len(ts)):
+        T = generateT(ts[i])
+        curve[i, 0:3] = np.matmul(M, T).T
+    return curve
+
 # Controller of the pyglet window
 class Controller(pyglet.window.Window):
     def __init__(self, width, height, title=f"La mejor tarea 2 de la sección"):
@@ -50,9 +73,7 @@ class Controller(pyglet.window.Window):
         super().__init__(width, height, title, fullscreen=True)
         self.set_exclusive_mouse(True)
         self.set_icon(pyglet.image.load(ASSETS["icon"]))
-
-        # Time in the scene
-        self.total_time = 0.0
+        self.total_time = 0.0 # Time in the scene
 
 # Scene graph manager
 class Scene:
@@ -242,6 +263,7 @@ controller = Controller(width=screen_width, height=screen_height)
 scene = Scene()
 camera = Camera()
 movement = Movement()
+control_points = [[], []] # Coordenates, angles
 
 # Camera setup
 glClearColor(0.05, 0.05, 0.1, 1.0)
@@ -252,6 +274,9 @@ glUseProgram(scene.pipeline.shaderProgram)
 @controller.event
 def on_key_press(symbol, modifiers):
     if symbol == pyglet.window.key.C: camera.set_projection()
+    if symbol == pyglet.window.key.R:
+        control_points[0].append(movement.eye)
+        control_points[1].append([movement.rotation_y, movement.rotation_z])
     if symbol == pyglet.window.key.A: movement.z_angle += 1
     if symbol == pyglet.window.key.D: movement.z_angle -= 1
     if symbol == pyglet.window.key.W: movement.x_direction += 1
@@ -292,9 +317,9 @@ def on_draw():
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0.0)])
 
     # Camera in perspective
-    scene.eye.transform = tr.matmul([tr.translate(0, 0, 0.5)])
+    scene.eye.transform = tr.matmul([tr.translate(-0.5, 0, 0.5)])
     scene.at.transform = tr.matmul([tr.translate(0.5, 0, 0.5)])
-    scene.up.transform = tr.matmul([tr.translate(0, 0, 1.0)]) #* up es el problema
+    scene.up.transform = tr.matmul([tr.translate(-0.5, 0, 1.0)])
 
     # Shadows
     ship1, ship2, ship3 = sg.findPosition(scene.squad, "shipRotation"), sg.findPosition(scene.squad, "shipRotation2"), sg.findPosition(scene.squad, "shipRotation3")
