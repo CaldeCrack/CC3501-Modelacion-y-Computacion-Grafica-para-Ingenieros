@@ -74,6 +74,7 @@ class Controller(pyglet.window.Window):
         self.set_exclusive_mouse(True)
         self.set_icon(pyglet.image.load(ASSETS["icon"]))
         self.total_time = 0.0 # Time in the scene
+        self.step = 0
 
 # Scene graph manager
 class Scene:
@@ -204,15 +205,15 @@ class Camera:
         self.projection = self.available_projections[self.proj]
 
     # Follow the ship
-    def update(self, move, eye, at, up):
+    def update(self, eye, at, up, ship):
         if(self.proj==0): # orthographic projection
             self.up = np.array([-0.577, -0.577, 0.577])
-            self.eye[0] = self.x+move.eye[0]
-            self.eye[1] = self.y+move.eye[1]
-            self.eye[2] = self.z+move.eye[2]
-            self.at[0] = move.eye[0]
-            self.at[1] = move.eye[1]
-            self.at[2] = move.eye[2]
+            self.eye[0] = self.x+ship[0][0]
+            self.eye[1] = self.y+ship[1][0]
+            self.eye[2] = self.z+ship[2][0]
+            self.at[0] = ship[0][0]
+            self.at[1] = ship[1][0]
+            self.at[2] = ship[2][0]
         else: # perspective projection
             self.eye[0] = eye[0][0]
             self.eye[1] = eye[1][0]
@@ -237,6 +238,9 @@ class Movement:
         # Angles
         self.y_angle = 0 # theta
         self.z_angle = 0 # phi
+
+        # Curve
+        self.curving = False
 
     # Move the ship
     def update(self):
@@ -274,39 +278,45 @@ glUseProgram(scene.pipeline.shaderProgram)
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
-    # Checkpoints
-    if symbol == pyglet.window.key.R:
-        point = np.array([movement.eye[0], movement.eye[1], movement.eye[2]]).T
-        rot_y = movement.rotation_y
-        rot_z = movement.rotation_z
-        angle = np.array([np.cos(rot_y)*np.cos(rot_z), np.cos(rot_y)*np.sin(rot_z), np.sin(rot_y)*-1]).T
-        control_points[0].append(point)
-        control_points[1].append(angle)
-        if len(control_points[0]) > 2:
-            GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2].T, angle*-1)
-            HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
-        elif len(control_points[0]) == 2:
-            GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2].T, angle*-1)
-            HermiteCurve = evalCurve(GMh, N)
+    global HermiteCurve
+    # reproduction
+    if symbol == pyglet.window.key._1:movement.curving = not movement.curving
+    # everything else
     if symbol == pyglet.window.key.C: camera.set_projection()
-    if symbol == pyglet.window.key.A: movement.z_angle += 1
-    if symbol == pyglet.window.key.D: movement.z_angle -= 1
-    if symbol == pyglet.window.key.W: movement.x_direction += 1
-    if symbol == pyglet.window.key.S: movement.x_direction -= 1
-    # the value of modifier when I press shift sometimes is 17 and other times is 1 (16 and 0 on release) and idk why
-    # pyglet.window.key.MOD_SHIFT doesn't always get the right value
-    if modifiers == pyglet.window.key.MOD_SHIFT: movement.speed = 0.3
+    if not movement.curving:
+        # checkpoints
+        if symbol == pyglet.window.key.R:
+            point = np.array([[movement.eye[0], movement.eye[1], movement.eye[2]]]).T
+            rot_y = movement.rotation_y
+            rot_z = movement.rotation_z
+            angle = np.array([[np.cos(rot_y)*np.cos(rot_z), np.cos(rot_y)*np.sin(rot_z), -np.sin(rot_y)]]).T
+            control_points[0].append(point)
+            control_points[1].append(angle)
+            if len(control_points[0]) > 2:
+                GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2], angle*-1)
+                HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
+            elif len(control_points[0]) == 2:
+                GMh = hermiteMatrix(control_points[0][-2], point, control_points[1][-2], angle*-1)
+                HermiteCurve = evalCurve(GMh, N)
+        if symbol == pyglet.window.key.A: movement.z_angle += 1
+        if symbol == pyglet.window.key.D: movement.z_angle -= 1
+        if symbol == pyglet.window.key.W: movement.x_direction += 1
+        if symbol == pyglet.window.key.S: movement.x_direction -= 1
+        # the value of modifier when I press shift sometimes is 17 and other times is 1 (16 and 0 on release) and idk why
+        # pyglet.window.key.MOD_SHIFT doesn't always get the right value
+        if modifiers == pyglet.window.key.MOD_SHIFT: movement.speed = 0.3
     # Close the window
     if symbol == pyglet.window.key.ESCAPE: controller.close()
 
 # What happens when the user releases these keys
 @controller.event
 def on_key_release(symbol, modifiers):
-    if symbol == pyglet.window.key.A: movement.z_angle -= 1
-    if symbol == pyglet.window.key.D: movement.z_angle += 1
-    if symbol == pyglet.window.key.W: movement.x_direction -= 1
-    if symbol == pyglet.window.key.S: movement.x_direction += 1
-    if modifiers == pyglet.window.key.MOD_SHIFT-1: movement.speed = 0.15
+    if not movement.curving:
+        if symbol == pyglet.window.key.A: movement.z_angle -= 1
+        if symbol == pyglet.window.key.D: movement.z_angle += 1
+        if symbol == pyglet.window.key.W: movement.x_direction -= 1
+        if symbol == pyglet.window.key.S: movement.x_direction += 1
+        if modifiers == pyglet.window.key.MOD_SHIFT-1: movement.speed = 0.15
 
 # What happens when the user moves the mouse
 @controller.event
@@ -317,14 +327,24 @@ def on_mouse_motion(x, y, dx, dy):
 # What draws at every frame
 @controller.event
 def on_draw():
+    # step update
+    if controller.step >= N-1: controller.step = 0
+    controller.step += 1
+
     # Clear window every frame
     controller.clear()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Ships movement
     movement.update()
-    ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
-    ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
+    if movement.curving: # ship through the curve
+        checkpoints = len(control_points[0])-1
+        ship_move = tr.matmul([tr.translate(HermiteCurve[controller.step*checkpoints, 0], HermiteCurve[controller.step*checkpoints, 1], HermiteCurve[controller.step*checkpoints, 2])])
+        ship_rot = [tr.rotationZ(0), tr.rotationY(0)]
+    else: # ship free movement
+        ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
+        ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
+    # ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0.0)])
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0.0)])
 
@@ -371,7 +391,7 @@ def on_draw():
     glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "quadraticAttenuation"), 0.01)
 
     # Camera tracking of the ship, projection and view
-    camera.update(movement, eye, at, up)
+    camera.update(eye, at, up, ship1)
     view = tr.lookAt(camera.eye, camera.at, camera.up)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
