@@ -283,10 +283,12 @@ def on_key_press(symbol, modifiers):
     global n
     # reproduction
     if symbol == pyglet.window.key._1:
-        vector = control_points[0][-1]-control_points[0][-3]
-        GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], -control_points[1][-1])
-        HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
-        n += N
+        if len(control_points[0]) > 2:
+            vector = control_points[0][-1]-control_points[0][-3]
+            GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], -control_points[1][-1])
+            HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
+            n += N
+        controller.step = 0
         movement.curving = not movement.curving
     # everything else
     if symbol == pyglet.window.key.C: camera.set_projection()
@@ -300,13 +302,22 @@ def on_key_press(symbol, modifiers):
             control_points[0].append(point)
             control_points[1].append(angle)
             lenC = len(control_points[0])
-            if lenC > 2: #! alo error aqui
-                vector = point-control_points[0][-3]
-                control_points[1][-2] = vector
-                GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], control_points[1][-3], -control_points[1][-2])
-                HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0) #! error no concatena porque ta vacio HermiteCurve inicialmente
+            if lenC > 2:
+                if lenC == 3:
+                    vector = point-control_points[0][-3]
+                    GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], control_points[1][-3], vector)
+                    HermiteCurve = evalCurve(GMh, N)
+                    control_points[1][-2] = vector
+                else:
+                    vector = point-control_points[0][-3]
+                    control_points[1][-2] = vector
+                    GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], control_points[1][-3], control_points[1][-2])
+                    HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
+                    n += N
+            elif lenC == 2:
+                GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
+                HermiteCurve = evalCurve(GMh, N)
                 n += N
-            elif lenC == 2: n += N
         if symbol == pyglet.window.key.A: movement.z_angle += 1
         if symbol == pyglet.window.key.D: movement.z_angle -= 1
         if symbol == pyglet.window.key.W: movement.x_direction += 1
