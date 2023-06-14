@@ -5,8 +5,6 @@ import libs.transformations as tr
 import libs.scene_graph as sg
 import libs.shapes as shp
 import libs.shaders as sh
-# import libs.basic_shapes as bs
-# import libs.easy_shaders as es
 import libs.lighting_shaders as ls
 
 from libs.gpu_shape import createGPUShape
@@ -46,18 +44,11 @@ PROJECTIONS = [
 ]
 TEX = [GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST]
 
-def plotCurve(ax, curve, label, color=(0,0,1)):
-    
-    xs = curve[:, 0]
-    ys = curve[:, 1]
-    zs = curve[:, 2]
-    
-    ax.plot(xs, ys, zs, label=label, color=color)
-
 # Curve functions
 def generateT(t):
     return np.array([[1, t, t**2, t**3]]).T
 
+# Hermite curve
 def hermiteMatrix(P1, P2, T1, T2):
     # Generate a matrix concatenating the columns
     G = np.concatenate((P1, P2, T1, T2), axis=1)
