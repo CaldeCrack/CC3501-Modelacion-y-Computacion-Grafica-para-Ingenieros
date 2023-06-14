@@ -280,6 +280,7 @@ glUseProgram(scene.pipeline.shaderProgram)
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
+    global prevHermiteCurve
     global hermiteCurve
     global n
     # reproduction
