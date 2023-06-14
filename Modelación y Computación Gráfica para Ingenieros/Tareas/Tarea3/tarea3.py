@@ -1,10 +1,12 @@
 # coding=utf-8
 import sys, os, pyglet
 import numpy as np
-import libs.shaders as sh
 import libs.transformations as tr
 import libs.scene_graph as sg
 import libs.shapes as shp
+import libs.shaders as sh
+import libs.basic_shapes as bs
+import libs.easy_shaders as es
 import libs.lighting_shaders as ls
 
 from libs.gpu_shape import createGPUShape
@@ -21,7 +23,6 @@ from OpenGL.GL import *
 
 # Initial data
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-n=0
 N=100
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
@@ -74,6 +75,7 @@ class Controller(pyglet.window.Window):
         super().__init__(width, height, title, fullscreen=True)
         self.set_exclusive_mouse(True)
         self.set_icon(pyglet.image.load(ASSETS["icon"]))
+        self.showCurve = False
         self.total_time = 0.0 # Time in the scene
         self.step = 0
 
@@ -81,6 +83,7 @@ class Controller(pyglet.window.Window):
 class Scene:
     def __init__(self) -> None:
         # Initial setup of the scene
+        self.linePipeline = sh.SimpleModelViewProjectionShaderProgram()
         self.pipeline = ls.SimpleTexturePhongShaderProgram()
         self.root = sg.SceneGraphNode("root")
         tex_params = TEX
@@ -286,9 +289,10 @@ def on_key_press(symbol, modifiers):
     # reproduction
     if symbol == pyglet.window.key._1:
         controller.step = 0
-        movement.curving = not movement.curving
+        if len(control_points[0]) > 0: movement.curving = not movement.curving
     # everything else
     if symbol == pyglet.window.key.C: camera.set_projection()
+    if symbol == pyglet.window.key.V: controller.showCurve = not controller.showCurve
     if not movement.curving:
         # checkpoints
         if symbol == pyglet.window.key.R:
@@ -309,11 +313,9 @@ def on_key_press(symbol, modifiers):
                 # create the end of the curve
                 GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
                 hermiteCurve = np.concatenate((prevHermiteCurve, evalCurve(GMh, N)), axis=0)
-                n += N
             elif lenC == 2:
                 GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
                 hermiteCurve = evalCurve(GMh, N)
-                n += N
         if symbol == pyglet.window.key.A: movement.z_angle += 1
         if symbol == pyglet.window.key.D: movement.z_angle -= 1
         if symbol == pyglet.window.key.W: movement.x_direction += 1
@@ -344,11 +346,25 @@ def on_mouse_motion(x, y, dx, dy):
 @controller.event
 def on_draw():
     # step update
-    if controller.step >= n-1: controller.step = 0
+    if controller.step >= N*(len(control_points[0])-1)-1: controller.step = 0
     controller.step += 1
 
     # Clear window every frame
     controller.clear()
+    mvpPipeline = scene.linePipeline
+
+    # Draw the polyline
+    if controller.showCurve:
+        cpuAxis = bs.createAxis(100)
+        gpuAxis = es.GPUShape().initBuffers()
+        mvpPipeline.setupVAO(gpuAxis)
+        gpuAxis.fillBuffers(cpuAxis.vertices, cpuAxis.indices, GL_STATIC_DRAW)
+        glUseProgram(mvpPipeline.shaderProgram)
+        glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "model"), 1, GL_TRUE, tr.identity())
+        mvpPipeline.drawCall(gpuAxis, GL_LINES)
+
+    # Make 3D models looks good
+    glUseProgram(scene.pipeline.shaderProgram)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Ships movement
@@ -410,6 +426,8 @@ def on_draw():
     view = tr.lookAt(camera.eye, camera.at, camera.up)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
+    glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
+    glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "view"), 1, GL_TRUE, view)
     sg.drawSceneGraphNode(scene.root, scene.pipeline, "model")
 
 # Set a time in controller
