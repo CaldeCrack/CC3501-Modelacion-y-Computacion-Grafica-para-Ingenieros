@@ -5,8 +5,8 @@ import libs.transformations as tr
 import libs.scene_graph as sg
 import libs.shapes as shp
 import libs.shaders as sh
-import libs.basic_shapes as bs
-import libs.easy_shaders as es
+# import libs.basic_shapes as bs
+# import libs.easy_shaders as es
 import libs.lighting_shaders as ls
 
 from libs.gpu_shape import createGPUShape
@@ -46,6 +46,14 @@ PROJECTIONS = [
 ]
 TEX = [GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST]
 
+def plotCurve(ax, curve, label, color=(0,0,1)):
+    
+    xs = curve[:, 0]
+    ys = curve[:, 1]
+    zs = curve[:, 2]
+    
+    ax.plot(xs, ys, zs, label=label, color=color)
+
 # Curve functions
 def generateT(t):
     return np.array([[1, t, t**2, t**3]]).T
@@ -67,6 +75,21 @@ def evalCurve(M, N):
         T = generateT(ts[i])
         curve[i, 0:3] = np.matmul(M, T).T
     return curve
+
+# Set lightning shader
+def setLightShader(shader):
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "La"), 0.8, 0.8, 0.8)
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "Ld"), 0.9, 0.9, 0.9)
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "Ls"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "Ka"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "Kd"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "Ks"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "lightPosition"), 0, 0, 25)
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "viewPosition"), camera.eye[0], camera.eye[1], camera.eye[2])
+    glUniform1ui(glGetUniformLocation(shader.shaderProgram, "shininess"), 300)
+    glUniform1f(glGetUniformLocation(shader.shaderProgram, "constantAttenuation"), 0.1)
+    glUniform1f(glGetUniformLocation(shader.shaderProgram, "linearAttenuation"), 0.1)
+    glUniform1f(glGetUniformLocation(shader.shaderProgram, "quadraticAttenuation"), 0.01)
 
 # Controller of the pyglet window
 class Controller(pyglet.window.Window):
@@ -345,27 +368,15 @@ def on_mouse_motion(x, y, dx, dy):
 # What draws at every frame
 @controller.event
 def on_draw():
-    # step update
+    # Step update
     if controller.step >= N*(len(control_points[0])-1)-1: controller.step = 0
     controller.step += 1
 
-    # Clear window every frame
+    # Things
     controller.clear()
-    mvpPipeline = scene.linePipeline
-
-    # Draw the polyline
-    if controller.showCurve:
-        cpuAxis = bs.createAxis(100)
-        gpuAxis = es.GPUShape().initBuffers()
-        mvpPipeline.setupVAO(gpuAxis)
-        gpuAxis.fillBuffers(cpuAxis.vertices, cpuAxis.indices, GL_STATIC_DRAW)
-        glUseProgram(mvpPipeline.shaderProgram)
-        glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "model"), 1, GL_TRUE, tr.identity())
-        mvpPipeline.drawCall(gpuAxis, GL_LINES)
-
-    # Make 3D models looks good
     glUseProgram(scene.pipeline.shaderProgram)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+    # mvpPipeline = scene.linePipeline
 
     # Ships movement
     movement.update()
@@ -408,26 +419,13 @@ def on_draw():
     scene.amongUsShadow.transform = tr.matmul([tr.translate(9, -1, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(np.pi), tr.rotationX(np.pi/2)])
 
     # Lighting shader
-    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "La"), 0.8, 0.8, 0.8)
-    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ld"), 0.9, 0.9, 0.9)
-    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ls"), 1, 1, 1)
-    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ka"), 1, 1, 1)
-    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Kd"), 1, 1, 1)
-    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "Ks"), 1, 1, 1)
-    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "lightPosition"), 0, 0, 25)
-    glUniform3f(glGetUniformLocation(scene.pipeline.shaderProgram, "viewPosition"), camera.eye[0], camera.eye[1], camera.eye[2])
-    glUniform1ui(glGetUniformLocation(scene.pipeline.shaderProgram, "shininess"), 300)
-    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "constantAttenuation"), 0.1)
-    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "linearAttenuation"), 0.1)
-    glUniform1f(glGetUniformLocation(scene.pipeline.shaderProgram, "quadraticAttenuation"), 0.01)
+    setLightShader(scene.pipeline)
 
     # Camera tracking of the ship, projection and view
     camera.update(eye, at, up, ship1)
     view = tr.lookAt(camera.eye, camera.at, camera.up)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
-    glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
-    glUniformMatrix4fv(glGetUniformLocation(mvpPipeline.shaderProgram, "view"), 1, GL_TRUE, view)
     sg.drawSceneGraphNode(scene.root, scene.pipeline, "model")
 
 # Set a time in controller
