@@ -269,7 +269,8 @@ scene = Scene()
 camera = Camera()
 movement = Movement()
 control_points = [[], []] # Coordenates, angles
-HermiteCurve = None
+prevHermiteCurve = None
+hermiteCurve = None
 
 # Camera setup
 glClearColor(0.05, 0.05, 0.1, 1.0)
@@ -279,15 +280,10 @@ glUseProgram(scene.pipeline.shaderProgram)
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
-    global HermiteCurve
+    global hermiteCurve
     global n
     # reproduction
     if symbol == pyglet.window.key._1:
-        if len(control_points[0]) > 2:
-            vector = control_points[0][-1]-control_points[0][-3]
-            GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], -control_points[1][-1])
-            HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
-            n += N
         controller.step = 0
         movement.curving = not movement.curving
     # everything else
@@ -296,27 +292,26 @@ def on_key_press(symbol, modifiers):
         # checkpoints
         if symbol == pyglet.window.key.R:
             point = np.array([[movement.eye[0], movement.eye[1], movement.eye[2]]]).T
-            rot_y = movement.rotation_y
-            rot_z = movement.rotation_z
+            rot_y, rot_z = movement.rotation_y, movement.rotation_z
             angle = np.array([[np.cos(rot_y)*np.cos(rot_z), np.cos(rot_y)*np.sin(rot_z), -np.sin(rot_y)]]).T
             control_points[0].append(point)
             control_points[1].append(angle)
             lenC = len(control_points[0])
             if lenC > 2:
-                if lenC == 3:
-                    vector = point-control_points[0][-3]
-                    GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], control_points[1][-3], vector)
-                    HermiteCurve = evalCurve(GMh, N)
-                    control_points[1][-2] = vector
-                else:
-                    vector = point-control_points[0][-3]
-                    control_points[1][-2] = vector
-                    GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], control_points[1][-3], control_points[1][-2])
-                    HermiteCurve = np.concatenate((HermiteCurve, evalCurve(GMh, N)), axis=0)
-                    n += N
+                # re create prev curve
+                vector = point-control_points[0][-3]
+                control_points[1][-2] = vector
+                GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], control_points[1][-3], control_points[1][-2])
+                # save it
+                if lenC > 3: prevHermiteCurve = np.concatenate((prevHermiteCurve, evalCurve(GMh, N)), axis=0)
+                else: prevHermiteCurve = evalCurve(GMh, N)
+                # create the end of the curve
+                GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
+                hermiteCurve = np.concatenate((prevHermiteCurve, evalCurve(GMh, N)), axis=0)
+                n += N
             elif lenC == 2:
                 GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
-                HermiteCurve = evalCurve(GMh, N)
+                hermiteCurve = evalCurve(GMh, N)
                 n += N
         if symbol == pyglet.window.key.A: movement.z_angle += 1
         if symbol == pyglet.window.key.D: movement.z_angle -= 1
@@ -358,7 +353,7 @@ def on_draw():
     # Ships movement
     movement.update()
     if movement.curving: # ship through the curve
-        ship_move = [tr.translate(HermiteCurve[controller.step, 0], HermiteCurve[controller.step, 1], HermiteCurve[controller.step, 2])]
+        ship_move = [tr.translate(hermiteCurve[controller.step, 0], hermiteCurve[controller.step, 1], hermiteCurve[controller.step, 2])]
         ship_rot = [tr.rotationZ(0), tr.rotationY(0)]
     else: # ship free movement
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
