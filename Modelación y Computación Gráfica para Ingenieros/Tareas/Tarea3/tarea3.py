@@ -15,7 +15,7 @@ from itertools import chain
 from pathlib import Path
 from OpenGL.GL import *
 
-""" Controles:
+""" Controls:
     W/S: move forward/backward
     A/D: turn left/right
     move mouse up/down: turn up/down
@@ -23,6 +23,7 @@ from OpenGL.GL import *
     C: change perspective
     R: create control point
     V: view curve
+    B: restart curves
     1: reproduce path
 """
 
@@ -104,7 +105,6 @@ class Controller(pyglet.window.Window):
 class Scene:
     def __init__(self) -> None:
         # Initial setup of the scene
-        self.linePipeline = sh.SimpleModelViewProjectionShaderProgram()
         self.pipeline = ls.SimpleTexturePhongShaderProgram()
         self.root = sg.SceneGraphNode("root")
         tex_params = TEX
@@ -295,6 +295,7 @@ movement = Movement()
 control_points = [[], []] # Coordenates, angles
 prevHermiteCurve = None
 hermiteCurve = None
+smoothAngles = []
 
 # Camera setup
 glClearColor(0.05, 0.05, 0.1, 1.0)
@@ -304,6 +305,7 @@ glUseProgram(scene.pipeline.shaderProgram)
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
+    global control_points
     global prevHermiteCurve
     global hermiteCurve
     global n
@@ -314,6 +316,10 @@ def on_key_press(symbol, modifiers):
     # everything else
     if symbol == pyglet.window.key.C: camera.set_projection()
     if symbol == pyglet.window.key.V: controller.showCurve = not controller.showCurve
+    if symbol == pyglet.window.key.B:
+        control_points = [[], []]
+        prevHermiteCurve = None
+        hermiteCurve = None
     if not movement.curving:
         # checkpoints
         if symbol == pyglet.window.key.R:
@@ -334,7 +340,7 @@ def on_key_press(symbol, modifiers):
                 # create the end of the curve
                 GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
                 hermiteCurve = np.concatenate((prevHermiteCurve, evalCurve(GMh, N)), axis=0)
-            elif lenC == 2:
+            elif lenC == 2: # Create curve when just 2 control points
                 GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
                 hermiteCurve = evalCurve(GMh, N)
         if symbol == pyglet.window.key.A: movement.z_angle += 1
@@ -374,7 +380,6 @@ def on_draw():
     controller.clear()
     glUseProgram(scene.pipeline.shaderProgram)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-    # mvpPipeline = scene.linePipeline
 
     # Ships movement
     movement.update()
