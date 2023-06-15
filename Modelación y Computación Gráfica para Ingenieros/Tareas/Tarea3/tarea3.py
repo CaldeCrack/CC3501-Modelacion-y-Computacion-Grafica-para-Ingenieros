@@ -370,35 +370,6 @@ def on_draw():
     if controller.step >= N*(len(control_points[0])-1)-1: controller.step = 0
     controller.step += 1
 
-    # Draw curve
-    with open(Path(os.path.dirname(__file__)) / "shaders\point_vertex_program.glsl") as f:
-        vertex_program = f.read()
-
-    with open(Path(os.path.dirname(__file__)) / "shaders\point_fragment_program.glsl") as f:
-        fragment_program = f.read()
-
-    vert_shader = Shader(vertex_program, "vertex")
-    frag_shader = Shader(fragment_program, "fragment")
-    linePipeline = ShaderProgram(vert_shader, frag_shader)
-
-    if(controller.showCurve and len(control_points[0]) > 1):
-        controller.node_data = linePipeline.vertex_list(len(hermiteCurve), pyglet.gl.GL_POINTS, position="f")
-        controller.joint_data = linePipeline.vertex_list_indexed(
-            len(hermiteCurve),
-            pyglet.gl.GL_LINES,
-            tuple(chain(*(j for j in [range(len(hermiteCurve)-1)]))),
-            position="f",
-        )
-
-        controller.node_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
-        controller.joint_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
-
-        linePipeline.use()
-        controller.node_data.draw(pyglet.gl.GL_POINTS)
-        controller.joint_data.draw(pyglet.gl.GL_LINES)
-
-    # ---------- alo ----------
-
     # Things
     controller.clear()
     glUseProgram(scene.pipeline.shaderProgram)
@@ -453,6 +424,38 @@ def on_draw():
     view = tr.lookAt(camera.eye, camera.at, camera.up)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
+
+    # ---------- Draw curve ----------
+    with open(Path(os.path.dirname(__file__)) / "shaders\point_vertex_program.glsl") as f:
+        vertex_program = f.read()
+
+    with open(Path(os.path.dirname(__file__)) / "shaders\point_fragment_program.glsl") as f:
+        fragment_program = f.read()
+
+    vert_shader = Shader(vertex_program, "vertex")
+    frag_shader = Shader(fragment_program, "fragment")
+    linePipeline = ShaderProgram(vert_shader, frag_shader)
+
+    if(controller.showCurve and len(control_points[0]) > 1):
+        controller.node_data = linePipeline.vertex_list(len(hermiteCurve), pyglet.gl.GL_POINTS, position="f")
+        controller.joint_data = linePipeline.vertex_list_indexed(
+            len(hermiteCurve),
+            pyglet.gl.GL_LINES,
+            tuple(chain(*(j for j in [range(len(hermiteCurve)-1)]))),
+            position="f",
+        )
+
+        controller.node_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
+        controller.joint_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
+
+        linePipeline["projection"] = camera.projection.reshape(16, 1, order="F")
+        linePipeline["view"] = view.reshape(16, 1, order="F")
+        linePipeline.use()
+        controller.node_data.draw(pyglet.gl.GL_POINTS)
+        controller.joint_data.draw(pyglet.gl.GL_LINES)
+
+    # ---------- alo ----------
+
     sg.drawSceneGraphNode(scene.root, scene.pipeline, "model")
 
 # Set a time in controller
