@@ -21,7 +21,7 @@ from OpenGL.GL import *
     move mouse up/down: turn up/down
     hold shift: turbo
     C: change perspective
-    R: checkpoints
+    R: create control point
     V: view curve
     1: reproduce path
 """
@@ -425,12 +425,9 @@ def on_draw():
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "view"), 1, GL_TRUE, view)
 
-    # ---------- Draw curve ----------
-    with open(Path(os.path.dirname(__file__)) / "shaders\point_vertex_program.glsl") as f:
-        vertex_program = f.read()
-
-    with open(Path(os.path.dirname(__file__)) / "shaders\point_fragment_program.glsl") as f:
-        fragment_program = f.read()
+    # Draw curve
+    with open(Path(os.path.dirname(__file__)) / "shaders\point_vertex_program.glsl") as f: vertex_program = f.read()
+    with open(Path(os.path.dirname(__file__)) / "shaders\point_fragment_program.glsl") as f: fragment_program = f.read()
 
     vert_shader = Shader(vertex_program, "vertex")
     frag_shader = Shader(fragment_program, "fragment")
@@ -441,7 +438,7 @@ def on_draw():
         controller.joint_data = linePipeline.vertex_list_indexed(
             len(hermiteCurve),
             pyglet.gl.GL_LINES,
-            tuple(chain(*(j for j in [range(len(hermiteCurve)-1)]))),
+            tuple(chain(*(j for j in [range(len(hermiteCurve))]))),
             position="f",
         )
 
@@ -454,8 +451,7 @@ def on_draw():
         controller.node_data.draw(pyglet.gl.GL_POINTS)
         controller.joint_data.draw(pyglet.gl.GL_LINES)
 
-    # ---------- alo ----------
-
+    glUseProgram(scene.pipeline.shaderProgram)
     sg.drawSceneGraphNode(scene.root, scene.pipeline, "model")
 
 # Set a time in controller
