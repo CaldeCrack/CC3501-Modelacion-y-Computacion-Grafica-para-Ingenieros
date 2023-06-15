@@ -381,18 +381,18 @@ def on_draw():
     frag_shader = Shader(fragment_program, "fragment")
     linePipeline = ShaderProgram(vert_shader, frag_shader)
 
-    controller.node_data = linePipeline.vertex_list(
-        len(controller.cloth.vertices), pyglet.gl.GL_POINTS, position="f"
-    )
+    if(controller.showCurve and len(control_points[0]) > 1):
+        controller.node_data = linePipeline.vertex_list(len(hermiteCurve), pyglet.gl.GL_POINTS, position="f")
+        controller.joint_data = linePipeline.vertex_list_indexed(
+            len(hermiteCurve),
+            pyglet.gl.GL_LINES,
+            tuple(chain(*(j for j in [range(len(hermiteCurve)-1)]))),
+            position="f",
+        )
 
-    controller.joint_data = linePipeline.vertex_list_indexed(
-        len(controller.cloth.vertices),
-        pyglet.gl.GL_LINES,
-        tuple(chain(*(j for j in controller.cloth.joints))),
-        position="f",
-    )
+        controller.node_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
+        controller.joint_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
 
-    if(controller.showCurve):
         linePipeline.use()
         controller.node_data.draw(pyglet.gl.GL_POINTS)
         controller.joint_data.draw(pyglet.gl.GL_LINES)
