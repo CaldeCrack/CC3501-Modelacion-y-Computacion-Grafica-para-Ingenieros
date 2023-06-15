@@ -10,6 +10,9 @@ import libs.lighting_shaders as ls
 from libs.gpu_shape import createGPUShape
 from libs.obj_handler import read_OBJ2
 from libs.assets_path import getAssetPath
+from pyglet.graphics.shader import Shader, ShaderProgram
+from itertools import chain
+from pathlib import Path
 from OpenGL.GL import *
 
 """ Controles:
@@ -17,6 +20,10 @@ from OpenGL.GL import *
     A/D: turn left/right
     move mouse up/down: turn up/down
     hold shift: turbo
+    C: change perspective
+    R: checkpoints
+    V: view curve
+    1: reproduce path
 """
 
 # Initial data
@@ -362,6 +369,35 @@ def on_draw():
     # Step update
     if controller.step >= N*(len(control_points[0])-1)-1: controller.step = 0
     controller.step += 1
+
+    # Draw curve
+    with open(Path(os.path.dirname(__file__)) / "shaders\point_vertex_program.glsl") as f:
+        vertex_program = f.read()
+
+    with open(Path(os.path.dirname(__file__)) / "shaders\point_fragment_program.glsl") as f:
+        fragment_program = f.read()
+
+    vert_shader = Shader(vertex_program, "vertex")
+    frag_shader = Shader(fragment_program, "fragment")
+    linePipeline = ShaderProgram(vert_shader, frag_shader)
+
+    controller.node_data = linePipeline.vertex_list(
+        len(controller.cloth.vertices), pyglet.gl.GL_POINTS, position="f"
+    )
+
+    controller.joint_data = linePipeline.vertex_list_indexed(
+        len(controller.cloth.vertices),
+        pyglet.gl.GL_LINES,
+        tuple(chain(*(j for j in controller.cloth.joints))),
+        position="f",
+    )
+
+    if(controller.showCurve):
+        linePipeline.use()
+        controller.node_data.draw(pyglet.gl.GL_POINTS)
+        controller.joint_data.draw(pyglet.gl.GL_LINES)
+
+    # ---------- alo ----------
 
     # Things
     controller.clear()
