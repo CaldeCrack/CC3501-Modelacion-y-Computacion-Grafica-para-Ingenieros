@@ -203,7 +203,7 @@ class Camera:
             self.eye[1] = eye[1][0]
             self.eye[2] = eye[2][0]
             self.at = [at[0][0], at[1][0], at[2][0]]
-            self.up = [0, 0, up[2][0]-eye[2][0]]
+            self.up = [up[0][0]-eye[0][0], up[1][0]-eye[1][0], up[2][0]-eye[2][0]]
 
 # Movement of the ships
 class Movement:
@@ -224,7 +224,7 @@ class Movement:
     # Move the ship
     def update(self):
         # Update facing angle of the ship
-        if self.rotation_x > 2*np.pi or self.rotation_x < -2*np.pi:
+        if np.abs(self.rotation_x) > 2*np.pi:
             self.x_angle = 0
             self.rotation_x = 0
             self.looping = False
@@ -277,10 +277,10 @@ def on_key_press(symbol, modifiers):
         if len(control_points[0]) > 0: movement.curving = not movement.curving
     if symbol == pyglet.window.key.C: camera.set_projection()
     if symbol == pyglet.window.key.V: controller.showCurve = not controller.showCurve
+    if symbol == pyglet.window.key.P and not movement.looping: # special move
+        movement.looping = True
+        movement.x_angle = np.random.choice([1, -1])
     if not movement.curving:
-        if symbol == pyglet.window.key.P and not movement.looping: # special move
-            movement.looping = True
-            movement.x_angle = np.random.choice([1, -1])
         if symbol == pyglet.window.key.B: # delete path
             control_points = [[], []]
             prevHermiteCurve, hermiteCurve = None, None
@@ -339,6 +339,7 @@ def on_draw():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Ships movement
+    movement.update()
     if movement.curving: # curve movement
         vector = hermiteCurve[controller.step+1]-hermiteCurve[controller.step]
         if vector[0]+vector[1] != 0: vector /= np.linalg.norm(vector)
@@ -346,7 +347,6 @@ def on_draw():
         if vector[0]+vector[1] != 0: movement.rotation_z = np.sign(vector[1])*np.arccos(vector[0]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]))
         ship_move = [tr.translate(*hermiteCurve[controller.step])]
     else: # free movement
-        movement.update()
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
     ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y), tr.rotationX(movement.rotation_x)]
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0)])
