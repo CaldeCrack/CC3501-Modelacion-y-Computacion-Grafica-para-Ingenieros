@@ -206,7 +206,7 @@ class Camera:
 
 # Movement of the ships
 class Movement:
-    def __init__(self, eye=np.array([0.0, 0.0, 1.0]), rotation_y=0, rotation_z=0) -> None:
+    def __init__(self, eye=np.array([1.0, 1.0, 1.0]), rotation_y=0, rotation_z=0) -> None:
         # Initial setup
         self.eye = eye
         self.speed = 0.15
@@ -230,21 +230,17 @@ class Movement:
         if np.abs(self.eye[1]) < 50: self.eye[1] += (self.x_direction*np.cos(self.rotation_y)+np.sin(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*np.sin(self.rotation_z)*self.speed
         elif self.eye[1] >= 50: self.eye[1] -= 0.01
         else: self.eye[1] += 0.01
-        if self.eye[2] < 20 and self.eye[2] > 0.3: self.eye[2] += (self.x_direction*np.sin(self.rotation_y)*-1+np.cos(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*self.speed
-        elif self.eye[2] >= 20: self.eye[2] -= 0.01
+        if self.eye[2] < 30 and self.eye[2] > 0.4: self.eye[2] += (self.x_direction*np.sin(self.rotation_y)*-1+np.cos(self.rotation_y)*np.sin(2*controller.total_time)*0.01/self.speed)*self.speed
+        elif self.eye[2] >= 30: self.eye[2] -= 0.01
         else: self.eye[2] += 0.01
 
         # Stop rotation with the mouse
         movement.y_angle = 0
 
-    def curveUpdate(self):
-        pass
-
 # Initial setup
 controller, scene, camera, movement = Controller(width=screen_width, height=screen_height), Scene(), Camera(), Movement()
 control_points = [[], []] # Coordenates, angles
 prevHermiteCurve, hermiteCurve = None, None
-# smoothAngles = []
 
 # Scenario
 scene.addScenery("build1_obj", "build1_tex", [10, 12, 0], np.pi/2, 0, 1.5)
@@ -275,8 +271,7 @@ def on_key_press(symbol, modifiers):
     if not movement.curving:
         if symbol == pyglet.window.key.B:
             control_points = [[], []]
-            prevHermiteCurve = None
-            hermiteCurve = None
+            prevHermiteCurve, hermiteCurve = None, None
         # checkpoints
         if symbol == pyglet.window.key.R:
             point = np.array([[movement.eye[0], movement.eye[1], movement.eye[2]]]).T
@@ -306,8 +301,7 @@ def on_key_press(symbol, modifiers):
         # the value of modifier when I press shift sometimes is 17 and other times is 1 (16 and 0 on release) and idk why
         # pyglet.window.key.MOD_SHIFT doesn't always get the right value
         if modifiers == 17: movement.speed = 0.3
-    # Close the window
-    if symbol == pyglet.window.key.ESCAPE: controller.close()
+    if symbol == pyglet.window.key.ESCAPE: controller.close() # close the window
 
 # What happens when the user releases these keys
 @controller.event
@@ -330,7 +324,7 @@ def on_mouse_motion(x, y, dx, dy):
 @controller.event
 def on_draw():
     # Step update
-    if controller.step >= N*(len(control_points[0])-1)-1: controller.step = 0
+    if controller.step >= N*(len(control_points[0])-1)-2: controller.step = 0
     controller.step += 1
 
     # Things
@@ -340,7 +334,10 @@ def on_draw():
 
     # Ships movement
     if movement.curving: # curve movement
-        movement.curveUpdate()
+        vector = hermiteCurve[controller.step+1]-hermiteCurve[controller.step]
+        # movement.rotation_y = -np.arcsin(vector[2]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2])) #? theta
+        if (vector[0]+vector[1] != 0): movement.rotation_z = np.sign(vector[1])*np.arccos(vector[0]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]))
+        print(vector[0], vector[1])
         ship_move = [tr.translate(hermiteCurve[controller.step, 0], hermiteCurve[controller.step, 1], hermiteCurve[controller.step, 2])]
     else: # free movement
         movement.update()
