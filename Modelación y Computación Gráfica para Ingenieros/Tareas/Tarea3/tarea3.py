@@ -251,9 +251,9 @@ scene.addScenery("build1_obj", "build1_tex", [10, 12, 0], np.pi/2, 0, 1.5)
 scene.addScenery("build2_obj", "build2_tex", [-7, -2, 0], np.pi/2, np.pi/2, 1.4)
 scene.addScenery("ring_obj", "ring_tex", [0, 0, 0], 0, 0, 1)
 scene.addScenery("coin_obj", "ring_tex", [0, 0, 0], 0, 0, 1)
-# scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 1.6], np.pi/2, np.pi, 2) # generan lag xd
-# scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 4.4], np.pi/2, np.pi, 2) # estan muy detallados
-# scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 7.1], np.pi/2, np.pi, 2)
+scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 1.6], np.pi/2, np.pi, 2) # generan lag xd
+scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 4.4], np.pi/2, np.pi, 2) # estan muy detallados
+scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 7.1], np.pi/2, np.pi, 2)
 
 # Camera setup
 glClearColor(0.05, 0.05, 0.1, 1.0)
