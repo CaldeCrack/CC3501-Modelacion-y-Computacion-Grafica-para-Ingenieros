@@ -25,6 +25,7 @@ from OpenGL.GL import *
     V: view curve
     B: restart curves
     1: reproduce path
+    P: special move
 """
 
 # Initial data
@@ -210,9 +211,11 @@ class Movement:
         # Initial setup
         self.eye = eye
         self.speed = 0.15
+        self.rotation_x = 0
         self.rotation_y = rotation_y
         self.rotation_z = rotation_z
         self.x_direction = 0 # local x axis direction
+        self.x_angle = 0 # special move
         self.y_angle = 0 # theta
         self.z_angle = 0 # phi
         self.curving = False # curve
@@ -220,6 +223,10 @@ class Movement:
     # Move the ship
     def update(self):
         # Update facing angle of the ship
+        if self.rotation_x > 2*np.pi:
+            self.x_angle = 0
+            self.rotation_x = 0
+        self.rotation_x += self.x_angle*0.1
         self.rotation_y += self.y_angle*0.1
         self.rotation_z += self.z_angle*0.05
 
@@ -268,6 +275,7 @@ def on_key_press(symbol, modifiers):
         if len(control_points[0]) > 0: movement.curving = not movement.curving
     if symbol == pyglet.window.key.C: camera.set_projection()
     if symbol == pyglet.window.key.V: controller.showCurve = not controller.showCurve
+    if symbol == pyglet.window.key.P: movement.x_angle = 1
     if not movement.curving:
         if symbol == pyglet.window.key.B:
             control_points = [[], []]
@@ -333,7 +341,6 @@ def on_draw():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Ships movement
-    # if loop: rot_x = 1
     if movement.curving: # curve movement
         vector = hermiteCurve[controller.step+1]-hermiteCurve[controller.step]
         if vector[0]+vector[1] != 0: vector /= np.linalg.norm(vector)
@@ -343,7 +350,7 @@ def on_draw():
     else: # free movement
         movement.update()
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
-    ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
+    ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y), tr.rotationX(movement.rotation_x)]
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0)])
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0)])
     ship1, ship2, ship3 = sg.findPosition(scene.squad, "shipRotation"), sg.findPosition(scene.squad, "shipRotation2"), sg.findPosition(scene.squad, "shipRotation3")
