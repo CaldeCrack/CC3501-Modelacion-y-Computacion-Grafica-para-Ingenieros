@@ -28,8 +28,8 @@ from OpenGL.GL import *
 """
 
 # Initial data
+N=75
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-N=100
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
     "ring_obj": getAssetPath("ring.obj"), "ring_tex": getAssetPath("ring.png"), # ---
@@ -107,13 +107,13 @@ class Scene:
         # Initial setup of the scene
         self.pipeline = ls.SimpleTexturePhongShaderProgram()
         self.root = sg.SceneGraphNode("root")
-        tex_params = TEX
+        self.tex_params = TEX
 
         # --- Squad ---
         ship_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ship_obj"]))
-        ship_obj.texture = sh.textureSimpleSetup(ASSETS["ship_tex"], *tex_params)
+        ship_obj.texture = sh.textureSimpleSetup(ASSETS["ship_tex"], *self.tex_params)
         ship_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ship_obj"]))
-        ship_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *tex_params)
+        ship_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *self.tex_params)
         self.squad = sg.SceneGraphNode("squad")
         self.root.childs += [self.squad]
 
@@ -145,66 +145,29 @@ class Scene:
         # Floor
         self.scenario = sg.SceneGraphNode("scenario")
         cube = createGPUShape(self.pipeline, shp.createTextureQuad(*[50, 50]), "cube")
-        cube.texture = sh.textureSimpleSetup(ASSETS["cube_tex"], *tex_params)
+        cube.texture = sh.textureSimpleSetup(ASSETS["cube_tex"], *self.tex_params)
         self.floor = sg.SceneGraphNode("floor")
         self.floor.childs += [cube]
         self.scenario.childs += [self.floor]
         self.floor.transform = tr.scale(200, 200, 1)
         self.root.childs += [self.scenario]
 
-        # Buildings
-        build1 = sg.SceneGraphNode("build1") # First building
-        build1_transform = [tr.translate(10, 12, 0), tr.uniformScale(1.5), tr.rotationX(np.pi/2)]
-        build1.transform = tr.matmul(build1_transform)
-        build_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["build1_obj"]))
-        build_model.texture = sh.textureSimpleSetup(ASSETS["build1_tex"], *tex_params)
-        build1.childs += [build_model]
-        self.scenario.childs += [build1]
-        build2 = sg.SceneGraphNode("build2") # Second building
-        build2_transform = [tr.translate(-7, -2, 0), tr.uniformScale(1.4), tr.rotationZ(np.pi/2), tr.rotationX(np.pi/2)]
-        build2.transform = tr.matmul(build2_transform)
-        build_model2 = createGPUShape(self.pipeline, read_OBJ2(ASSETS["build2_obj"]))
-        build_model2.texture = sh.textureSimpleSetup(ASSETS["build2_tex"], *tex_params)
-        build2.childs += [build_model2]
-        self.scenario.childs += [build2]
-
-        # Ring
-        ring = sg.SceneGraphNode("ring")
-        ring_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ring_obj"]))
-        ring_model.texture = sh.textureSimpleSetup(ASSETS["ring_tex"], *tex_params)
-        ring.childs += [ring_model]
-        self.scenario.childs += [ring]
-        ring_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["ring_obj"])) # Ring shadow
-        ring_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *tex_params)
-        self.ringShadow = sg.SceneGraphNode("ringShadow")
-        self.ringShadow.childs += [ring_shadow_obj]
-        self.scenario.childs += [self.ringShadow]
-
-        # Coin
-        coin = sg.SceneGraphNode("coin")
-        coin_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["coin_obj"]))
-        coin_model.texture = sh.textureSimpleSetup(ASSETS["ring_tex"], *tex_params)
-        coin.childs += [coin_model]
-        self.scenario.childs += [coin]
-        coin_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["coin_obj"])) # Coin shadow
-        coin_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *tex_params)
-        self.coinShadow = sg.SceneGraphNode("coinShadow")
-        self.coinShadow.childs += [coin_shadow_obj]
-        self.scenario.childs += [self.coinShadow]
-
-        # Among Us
-        among_us = sg.SceneGraphNode("among_us")
-        among_us_transform = [tr.translate(9, -1, 1.6), tr.uniformScale(2.0), tr.rotationZ(np.pi), tr.rotationX(np.pi/2)]
-        among_us.transform = tr.matmul(among_us_transform)
-        among_us_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["among_us_obj"]))
-        among_us_model.texture = sh.textureSimpleSetup(ASSETS["among_us_tex"], *tex_params)
-        among_us.childs += [among_us_model]
-        self.scenario.childs += [among_us]
-        among_us_shadow_obj = createGPUShape(self.pipeline, read_OBJ2(ASSETS["among_us_obj"])) # Among Us shadow
-        among_us_shadow_obj.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *tex_params)
-        self.amongUsShadow = sg.SceneGraphNode("amongUsShadow")
-        self.amongUsShadow.childs += [among_us_shadow_obj]
-        self.scenario.childs += [self.amongUsShadow]
+    # Add scenery to the scene
+    def addScenery(self, obj, tex, pos, rotX, rotZ, scale):
+        # Model
+        node = sg.SceneGraphNode(obj)
+        model = createGPUShape(self.pipeline, read_OBJ2(ASSETS[obj]))
+        model.texture = sh.textureSimpleSetup(ASSETS[tex], *self.tex_params)
+        node.transform = tr.matmul([tr.translate(*pos), tr.uniformScale(scale), tr.rotationZ(rotZ), tr.rotationX(rotX)])
+        node.childs += [model]
+        self.scenario.childs += [node]
+        # Shadow
+        shadow = sg.SceneGraphNode(obj+"_shadow")
+        shadow_model = createGPUShape(self.pipeline, read_OBJ2(ASSETS[obj]))
+        shadow_model.texture = sh.textureSimpleSetup(ASSETS["black_tex"], *self.tex_params)
+        shadow.transform = tr.matmul([tr.translate(pos[0], pos[1], 0), tr.scale(scale, scale, 0.01), tr.rotationZ(rotZ), tr.rotationX(rotX)])
+        shadow.childs += [shadow_model]
+        self.scenario.childs += [shadow]
 
 # Camera which controls the projection and view
 class Camera:
@@ -287,6 +250,9 @@ class Movement:
         # Stop rotation with the mouse
         movement.y_angle = 0
 
+    def curveUpdate(self):
+        pass
+
 # Initial setup
 controller = Controller(width=screen_width, height=screen_height)
 scene = Scene()
@@ -295,7 +261,14 @@ movement = Movement()
 control_points = [[], []] # Coordenates, angles
 prevHermiteCurve = None
 hermiteCurve = None
-smoothAngles = []
+# smoothAngles = []
+
+# Scenario
+scene.addScenery("build1_obj", "build1_tex", [10, 12, 0], np.pi/2, 0, 1.5)
+scene.addScenery("build2_obj", "build2_tex", [-7, -2, 0], np.pi/2, np.pi/2, 1.4)
+scene.addScenery("ring_obj", "ring_tex", [0, 0, 0], 0, 0, 1)
+scene.addScenery("coin_obj", "ring_tex", [0, 0, 0], 0, 0, 1)
+scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 1.6], np.pi/2, np.pi, 2)
 
 # Camera setup
 glClearColor(0.05, 0.05, 0.1, 1.0)
@@ -305,15 +278,16 @@ glUseProgram(scene.pipeline.shaderProgram)
 # What happens when the user presses these keys
 @controller.event
 def on_key_press(symbol, modifiers):
+    # global variables
     global control_points
     global prevHermiteCurve
     global hermiteCurve
     global n
-    # reproduction
+
+    # everything else
     if symbol == pyglet.window.key._1:
         controller.step = 0
         if len(control_points[0]) > 0: movement.curving = not movement.curving
-    # everything else
     if symbol == pyglet.window.key.C: camera.set_projection()
     if symbol == pyglet.window.key.V: controller.showCurve = not controller.showCurve
     if not movement.curving:
@@ -383,49 +357,41 @@ def on_draw():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Ships movement
-    movement.update()
-    if movement.curving: # ship through the curve
+    if movement.curving: # curve movement
+        movement.curveUpdate()
         ship_move = [tr.translate(hermiteCurve[controller.step, 0], hermiteCurve[controller.step, 1], hermiteCurve[controller.step, 2])]
-        ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
-    else: # ship free movement
+    else: # free movement
+        movement.update()
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
-        ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
-    # ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
-    scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0.0)])
-    scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0.0)])
+    ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
+    scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0)])
+    scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0)])
+    ship1, ship2, ship3 = sg.findPosition(scene.squad, "shipRotation"), sg.findPosition(scene.squad, "shipRotation2"), sg.findPosition(scene.squad, "shipRotation3")
 
     # Camera in perspective
     scene.eye.transform = tr.matmul([tr.translate(-4.0, 0, 2.0)])
     scene.at.transform = tr.matmul([tr.translate(0.0, 0, 2.0)])
     scene.up.transform = tr.matmul([tr.translate(-4.0, 0, 3.0)])
-
-    # Shadows
-    ship1, ship2, ship3 = sg.findPosition(scene.squad, "shipRotation"), sg.findPosition(scene.squad, "shipRotation2"), sg.findPosition(scene.squad, "shipRotation3")
-    scene.shipRotationShadow.transform = tr.matmul([tr.translate(ship1[0][0], ship1[1][0], 0.1)]+[tr.scale(1, 1, 0.01)]+ship_rot)
-    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(ship2[0][0], ship2[1][0], 0.1)]+[tr.scale(1, 1, 0.01)]+ship_rot)
-    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(ship3[0][0], ship3[1][0], 0.1)]+[tr.scale(1, 1, 0.01)]+ship_rot)
-    scene.squad.transform = tr.matmul(ship_move+ship_rot) # Start movement of the ships
-
-    # Perspective position and up
     eye, up, at = sg.findPosition(scene.squad, "eye"), sg.findPosition(scene.squad, "up"), sg.findPosition(scene.squad, "at")
 
-    # Ring movement
-    ring = sg.findNode(scene.root, "ring")
-    ring.transform = tr.matmul([tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.3)])
-    scene.ringShadow.transform = tr.matmul([tr.translate(5, -4, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(controller.total_time*0.3)]) # Ring shadow
+    # Shadows
+    scene.shipRotationShadow.transform = tr.matmul([tr.translate(ship1[0][0], ship1[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
+    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(ship2[0][0], ship2[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
+    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(ship3[0][0], ship3[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
+    scene.squad.transform = tr.matmul(ship_move+ship_rot) # Start movement of the ships
 
-    # Coin movement
-    coin = sg.findNode(scene.root, "coin")
+    # Ring and coin movement
+    ring = sg.findNode(scene.root, "ring_obj")
+    ringShadow = sg.findNode(scene.root, "ring_obj_shadow")
+    ring.transform = tr.matmul([tr.translate(5, -4, 5+np.sin(controller.total_time)), tr.uniformScale(2), tr.rotationZ(controller.total_time*0.2)])
+    ringShadow.transform = tr.matmul([tr.translate(5, -4, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(controller.total_time*0.2)])
+    coin = sg.findNode(scene.root, "coin_obj")
+    coinShadow = sg.findNode(scene.root, "coin_obj_shadow")
     coin.transform = tr.matmul([tr.translate(-2, 10, 3+np.sin(controller.total_time)*0.5), tr.uniformScale(0.7), tr.rotationZ(controller.total_time)])
-    scene.coinShadow.transform = tr.matmul([tr.translate(-2, 10, 0.1), tr.scale(0.7, 0.7, 0.01), tr.rotationZ(controller.total_time*0.3)]) # Coin shadow
-
-    # Among Us shadow
-    scene.amongUsShadow.transform = tr.matmul([tr.translate(9, -1, 0.1), tr.scale(2, 2, 0.01), tr.rotationZ(np.pi), tr.rotationX(np.pi/2)])
-
-    # Lighting shader
-    setLightShader(scene.pipeline)
+    coinShadow.transform = tr.matmul([tr.translate(-2, 10, 0.1), tr.scale(0.7, 0.7, 0.01), tr.rotationZ(controller.total_time)])
 
     # Camera tracking of the ship, projection and view
+    setLightShader(scene.pipeline)
     camera.update(eye, at, up, ship1)
     view = tr.lookAt(camera.eye, camera.at, camera.up)
     glUniformMatrix4fv(glGetUniformLocation(scene.pipeline.shaderProgram, "projection"), 1, GL_TRUE, camera.projection)
