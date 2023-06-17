@@ -339,9 +339,9 @@ def on_draw():
         vector = hermiteCurve[controller.step+1]-hermiteCurve[controller.step]
         if controller.step-1 >= 0: prev_x = hermiteCurve[controller.step][0]-hermiteCurve[controller.step-1][0]
         else: prev_x = hermiteCurve[controller.step+1][0]-hermiteCurve[controller.step][0]
-        # prev_y = hermiteCurve[controller.step][1]-hermiteCurve[(controller.step-1)%(N*(len(control_points[0])-1)-len(control_points[0]))][1]
-        # vector /= np.linalg.norm(vector)
-        if (prev_x*vector[0] < 0) and np.abs(movement.rotation_y) > 1.50: movement.change = not movement.change
+        vector /= np.linalg.norm(vector)
+        prev_x /= np.linalg.norm(prev_x)
+        if (prev_x*vector[1] < 0) and np.abs(movement.rotation_y) > 1.50: movement.change = not movement.change
         if movement.change:
             if not movement.looping: movement.rotation_x = np.pi
             movement.rotation_y = np.arcsin(-vector[2]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2]))
