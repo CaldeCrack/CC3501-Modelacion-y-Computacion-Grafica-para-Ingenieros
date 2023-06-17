@@ -219,13 +219,15 @@ class Movement:
         self.y_angle = 0 # theta
         self.z_angle = 0 # phi
         self.curving = False # curve
+        self.looping = False
 
     # Move the ship
     def update(self):
         # Update facing angle of the ship
-        if self.rotation_x > 2*np.pi:
+        if self.rotation_x > 2*np.pi or self.rotation_x < -2*np.pi:
             self.x_angle = 0
             self.rotation_x = 0
+            self.looping = False
         self.rotation_x += self.x_angle*0.1
         self.rotation_y += self.y_angle*0.1
         self.rotation_z += self.z_angle*0.05
@@ -275,28 +277,26 @@ def on_key_press(symbol, modifiers):
         if len(control_points[0]) > 0: movement.curving = not movement.curving
     if symbol == pyglet.window.key.C: camera.set_projection()
     if symbol == pyglet.window.key.V: controller.showCurve = not controller.showCurve
-    if symbol == pyglet.window.key.P: movement.x_angle = 1
     if not movement.curving:
-        if symbol == pyglet.window.key.B:
+        if symbol == pyglet.window.key.P and not movement.looping: # special move
+            movement.looping = True
+            movement.x_angle = np.random.choice([1, -1])
+        if symbol == pyglet.window.key.B: # delete path
             control_points = [[], []]
             prevHermiteCurve, hermiteCurve = None, None
-        # checkpoints
-        if symbol == pyglet.window.key.R:
+        if symbol == pyglet.window.key.R: # curve
             point = np.array([[movement.eye[0], movement.eye[1], movement.eye[2]]]).T
             rot_y, rot_z = movement.rotation_y, movement.rotation_z
             angle = np.array([[np.cos(rot_y)*np.cos(rot_z), np.cos(rot_y)*np.sin(rot_z), -np.sin(rot_y)]]).T
             control_points[0].append(point)
             control_points[1].append(angle)
             lenC = len(control_points[0])
-            if lenC > 2:
-                # re create prev curve
+            if lenC > 2: # re create prev curve and create the end of the curve
                 vector = point-control_points[0][-3]
                 control_points[1][-2] = vector
                 GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], control_points[1][-3], control_points[1][-2])
-                # save it
                 if lenC > 3: prevHermiteCurve = np.concatenate((prevHermiteCurve[0:-1], evalCurve(GMh, N)), axis=0)
                 else: prevHermiteCurve = evalCurve(GMh, N)
-                # create the end of the curve
                 GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
                 hermiteCurve = np.concatenate((prevHermiteCurve[0:-1], evalCurve(GMh, N)), axis=0)
             elif lenC == 2: # Create curve when just 2 control points
@@ -306,9 +306,7 @@ def on_key_press(symbol, modifiers):
         if symbol == pyglet.window.key.D: movement.z_angle -= 1
         if symbol == pyglet.window.key.W: movement.x_direction += 1
         if symbol == pyglet.window.key.S: movement.x_direction -= 1
-        # the value of modifier when I press shift sometimes is 17 and other times is 1 (16 and 0 on release) and idk why
-        # pyglet.window.key.MOD_SHIFT doesn't always get the right value
-        if modifiers == 17: movement.speed = 0.3
+        if modifiers == 17: movement.speed = 0.3 # MOD_SHIFT does not always work for some reason
     if symbol == pyglet.window.key.ESCAPE: controller.close() # close the window
 
 # What happens when the user releases these keys
