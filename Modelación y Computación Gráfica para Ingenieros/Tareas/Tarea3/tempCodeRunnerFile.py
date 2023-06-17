@@ -1,0 +1,1 @@
+        print(movement.rotation_y)

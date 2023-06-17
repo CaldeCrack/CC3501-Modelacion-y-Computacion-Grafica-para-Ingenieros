@@ -220,6 +220,7 @@ class Movement:
         self.z_angle = 0 # phi
         self.curving = False # curve
         self.looping = False
+        self.change = False
 
     # Move the ship
     def update(self):
@@ -342,9 +343,17 @@ def on_draw():
     movement.update()
     if movement.curving: # curve movement
         vector = hermiteCurve[controller.step+1]-hermiteCurve[controller.step]
-        if vector[0]+vector[1] != 0: vector /= np.linalg.norm(vector)
-        if np.sum(vector) != 0: movement.rotation_y = -np.arcsin(vector[2]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2])) #? theta
-        if vector[0]+vector[1] != 0: movement.rotation_z = np.sign(vector[1])*np.arccos(vector[0]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]))
+        prev_x = hermiteCurve[controller.step][0]-hermiteCurve[(controller.step-1)%(N*(len(control_points[0])-1)-len(control_points[0]))][0]
+        prev_y = hermiteCurve[controller.step][1]-hermiteCurve[(controller.step-1)%(N*(len(control_points[0])-1)-len(control_points[0]))][1]
+        vector /= np.linalg.norm(vector)
+        if prev_x*vector[0] < 0 or prev_y*vector[1] < 0: movement.change = not movement.change
+        if movement.change:
+            if not movement.looping: movement.rotation_x = np.pi
+            movement.rotation_y = np.arcsin(-vector[2]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2]))
+        else:
+            if not movement.looping: movement.rotation_x = 0
+            movement.rotation_y = -np.arcsin(vector[2]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2]))
+        movement.rotation_z = np.sign(vector[1])*np.arccos(vector[0]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]))
         ship_move = [tr.translate(*hermiteCurve[controller.step])]
     else: # free movement
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
