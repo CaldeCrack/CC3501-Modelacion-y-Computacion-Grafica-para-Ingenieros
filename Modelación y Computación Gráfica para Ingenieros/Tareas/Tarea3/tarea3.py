@@ -316,11 +316,11 @@ def on_key_press(symbol, modifiers):
     # everything else
     if symbol == pyglet.window.key.C: camera.set_projection()
     if symbol == pyglet.window.key.V: controller.showCurve = not controller.showCurve
-    if symbol == pyglet.window.key.B:
-        control_points = [[], []]
-        prevHermiteCurve = None
-        hermiteCurve = None
     if not movement.curving:
+        if symbol == pyglet.window.key.B:
+            control_points = [[], []]
+            prevHermiteCurve = None
+            hermiteCurve = None
         # checkpoints
         if symbol == pyglet.window.key.R:
             point = np.array([[movement.eye[0], movement.eye[1], movement.eye[2]]]).T
@@ -366,8 +366,9 @@ def on_key_release(symbol, modifiers):
 # What happens when the user moves the mouse
 @controller.event
 def on_mouse_motion(x, y, dx, dy):
-    if dy>0: movement.y_angle = -0.6
-    if dy<0: movement.y_angle = 0.6
+    if not movement.curving:
+        if dy>0: movement.y_angle = -0.6
+        if dy<0: movement.y_angle = 0.6
 
 # What draws at every frame
 @controller.event
@@ -385,7 +386,7 @@ def on_draw():
     movement.update()
     if movement.curving: # ship through the curve
         ship_move = [tr.translate(hermiteCurve[controller.step, 0], hermiteCurve[controller.step, 1], hermiteCurve[controller.step, 2])]
-        ship_rot = [tr.rotationZ(0), tr.rotationY(0)]
+        ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
     else: # ship free movement
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
         ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y)]
@@ -433,29 +434,22 @@ def on_draw():
     # Draw curve
     with open(Path(os.path.dirname(__file__)) / "shaders\point_vertex_program.glsl") as f: vertex_program = f.read()
     with open(Path(os.path.dirname(__file__)) / "shaders\point_fragment_program.glsl") as f: fragment_program = f.read()
-
     vert_shader = Shader(vertex_program, "vertex")
     frag_shader = Shader(fragment_program, "fragment")
     linePipeline = ShaderProgram(vert_shader, frag_shader)
-
     if(controller.showCurve and len(control_points[0]) > 1):
         controller.node_data = linePipeline.vertex_list(len(hermiteCurve), pyglet.gl.GL_POINTS, position="f")
-        controller.joint_data = linePipeline.vertex_list_indexed(
-            len(hermiteCurve),
-            pyglet.gl.GL_LINES,
-            tuple(chain(*(j for j in [range(len(hermiteCurve))]))),
-            position="f",
-        )
-
+        controller.joint_data = linePipeline.vertex_list_indexed(len(hermiteCurve), pyglet.gl.GL_LINES,
+            tuple(chain(*(j for j in [range(len(hermiteCurve))]))), position="f",)
         controller.node_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
         controller.joint_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
-
         linePipeline["projection"] = camera.projection.reshape(16, 1, order="F")
         linePipeline["view"] = view.reshape(16, 1, order="F")
         linePipeline.use()
         controller.node_data.draw(pyglet.gl.GL_POINTS)
         controller.joint_data.draw(pyglet.gl.GL_LINES)
 
+    # Light shader
     glUseProgram(scene.pipeline.shaderProgram)
     sg.drawSceneGraphNode(scene.root, scene.pipeline, "model")
 
