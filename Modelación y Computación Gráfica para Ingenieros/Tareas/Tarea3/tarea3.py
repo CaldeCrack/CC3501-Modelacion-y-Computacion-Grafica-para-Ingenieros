@@ -28,7 +28,7 @@ from OpenGL.GL import *
 """
 
 # Initial data
-N=75
+N=50
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
@@ -46,8 +46,8 @@ display = pyglet.canvas.Display()
 screen = display.get_default_screen()
 screen_height, screen_width = screen.height, screen.width
 PROJECTIONS = [
-    tr.ortho(-10*screen_width/screen_height, 10*screen_width/screen_height, -10, 10, 0.1, 100),  # ORTOGRAPHIC_PROJECTION
-    tr.perspective(100, float(screen_width)/float(screen_height), 0.1, 100)  # PERSPECTIVE_PROJECTION
+    tr.ortho(-10*screen_width/screen_height, 10*screen_width/screen_height, -10, 10, 0.1, 200),  # ORTOGRAPHIC_PROJECTION
+    tr.perspective(100, float(screen_width)/float(screen_height), 0.1, 200)  # PERSPECTIVE_PROJECTION
 ]
 TEX = [GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST]
 
@@ -286,11 +286,11 @@ def on_key_press(symbol, modifiers):
                 control_points[1][-2] = vector
                 GMh = hermiteMatrix(control_points[0][-3], control_points[0][-2], control_points[1][-3], control_points[1][-2])
                 # save it
-                if lenC > 3: prevHermiteCurve = np.concatenate((prevHermiteCurve, evalCurve(GMh, N)), axis=0)
+                if lenC > 3: prevHermiteCurve = np.concatenate((prevHermiteCurve[0:-1], evalCurve(GMh, N)), axis=0)
                 else: prevHermiteCurve = evalCurve(GMh, N)
                 # create the end of the curve
                 GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
-                hermiteCurve = np.concatenate((prevHermiteCurve, evalCurve(GMh, N)), axis=0)
+                hermiteCurve = np.concatenate((prevHermiteCurve[0:-1], evalCurve(GMh, N)), axis=0)
             elif lenC == 2: # Create curve when just 2 control points
                 GMh = hermiteMatrix(control_points[0][-2], control_points[0][-1], control_points[1][-2], control_points[1][-1])
                 hermiteCurve = evalCurve(GMh, N)
@@ -324,7 +324,7 @@ def on_mouse_motion(x, y, dx, dy):
 @controller.event
 def on_draw():
     # Step update
-    if controller.step >= N*(len(control_points[0])-1)-2: controller.step = 0
+    if controller.step >= N*(len(control_points[0])-1)-len(control_points[0]): controller.step = 0
     controller.step += 1
 
     # Things
@@ -333,12 +333,13 @@ def on_draw():
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     # Ships movement
+    # if loop: rot_x = 1
     if movement.curving: # curve movement
         vector = hermiteCurve[controller.step+1]-hermiteCurve[controller.step]
-        # movement.rotation_y = -np.arcsin(vector[2]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2])) #? theta
-        if (vector[0]+vector[1] != 0): movement.rotation_z = np.sign(vector[1])*np.arccos(vector[0]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]))
-        print(vector[0], vector[1])
-        ship_move = [tr.translate(hermiteCurve[controller.step, 0], hermiteCurve[controller.step, 1], hermiteCurve[controller.step, 2])]
+        if vector[0]+vector[1] != 0: vector /= np.linalg.norm(vector)
+        if np.sum(vector) != 0: movement.rotation_y = -np.arcsin(vector[2]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2])) #? theta
+        if vector[0]+vector[1] != 0: movement.rotation_z = np.sign(vector[1])*np.arccos(vector[0]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]))
+        ship_move = [tr.translate(*hermiteCurve[controller.step])]
     else: # free movement
         movement.update()
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
