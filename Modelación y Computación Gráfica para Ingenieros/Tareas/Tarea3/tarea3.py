@@ -88,7 +88,7 @@ def setLightShader(shader):
 
 # Controller of the pyglet window
 class Controller(pyglet.window.Window):
-    def __init__(self, width, height, title=f"La mejor tarea 2 de la sección"):
+    def __init__(self, width, height, title=f"La mejor tarea 3 de la sección"):
         # Initial setup of the window
         super().__init__(width, height, title, fullscreen=True)
         self.set_exclusive_mouse(True)
@@ -192,18 +192,12 @@ class Camera:
     def update(self, eye, at, up, ship):
         if(self.proj==0): # orthographic projection
             self.up = np.array([-0.577, -0.577, 0.577])
-            self.eye[0] = self.x+ship[0][0]
-            self.eye[1] = self.y+ship[1][0]
-            self.eye[2] = self.z+ship[2][0]
-            self.at[0] = ship[0][0]
-            self.at[1] = ship[1][0]
-            self.at[2] = ship[2][0]
+            self.eye = np.array([self.x+ship[0][0], self.y+ship[1][0], self.z+ship[2][0]])
+            self.at = np.array([ship[0][0], ship[1][0], ship[2][0]])
         else: # perspective projection
-            self.eye[0] = eye[0][0]
-            self.eye[1] = eye[1][0]
-            self.eye[2] = eye[2][0]
-            self.at = [at[0][0], at[1][0], at[2][0]]
-            self.up = [up[0][0]-eye[0][0], up[1][0]-eye[1][0], up[2][0]-eye[2][0]]
+            self.eye = np.array([eye[0][0], eye[1][0], eye[2][0]])
+            self.at = np.array([at[0][0], at[1][0], at[2][0]])
+            self.up = np.array([up[0][0]-eye[0][0], up[1][0]-eye[1][0], up[2][0]-eye[2][0]])
 
 # Movement of the ships
 class Movement:
@@ -331,8 +325,7 @@ def on_mouse_motion(x, y, dx, dy):
 @controller.event
 def on_draw():
     # Step update
-    steps = N*(len(control_points[0])-1)-len(control_points[0])
-    if controller.step >= steps: controller.step = -1
+    if controller.step >= N*(len(control_points[0])-1)-len(control_points[0]): controller.step = -1
     controller.step += 1
 
     # Things
