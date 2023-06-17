@@ -44,17 +44,12 @@ ASSETS = {
 # Aspect ratio and projection
 display = pyglet.canvas.Display()
 screen = display.get_default_screen()
-screen_height = screen.height
-screen_width = screen.width
+screen_height, screen_width = screen.height, screen.width
 PROJECTIONS = [
     tr.ortho(-10*screen_width/screen_height, 10*screen_width/screen_height, -10, 10, 0.1, 100),  # ORTOGRAPHIC_PROJECTION
     tr.perspective(100, float(screen_width)/float(screen_height), 0.1, 100)  # PERSPECTIVE_PROJECTION
 ]
 TEX = [GL_REPEAT, GL_REPEAT, GL_NEAREST, GL_NEAREST]
-
-# Curve functions
-def generateT(t):
-    return np.array([[1, t, t**2, t**3]]).T
 
 # Hermite curve
 def hermiteMatrix(P1, P2, T1, T2):
@@ -71,7 +66,7 @@ def evalCurve(M, N):
     # The computed value in R3 for each sample will be stored here
     curve = np.ndarray(shape=(N, 3), dtype=float)
     for i in range(len(ts)):
-        T = generateT(ts[i])
+        T = np.array([[1, ts[i], ts[i]**2, ts[i]**3]]).T
         curve[i, 0:3] = np.matmul(M, T).T
     return curve
 
@@ -142,15 +137,15 @@ class Scene:
         self.root.childs += [self.ship_shadows]
 
         # --- Scenery ---
-        # Floor
         self.scenario = sg.SceneGraphNode("scenario")
+        self.root.childs += [self.scenario]
+        # Floor
+        floor = sg.SceneGraphNode("floor")
         cube = createGPUShape(self.pipeline, shp.createTextureQuad(*[50, 50]), "cube")
         cube.texture = sh.textureSimpleSetup(ASSETS["cube_tex"], *self.tex_params)
-        self.floor = sg.SceneGraphNode("floor")
-        self.floor.childs += [cube]
-        self.scenario.childs += [self.floor]
-        self.floor.transform = tr.scale(200, 200, 1)
-        self.root.childs += [self.scenario]
+        floor.transform = tr.scale(200, 200, 1)
+        floor.childs += [cube]
+        self.scenario.childs += [floor]
 
     # Add scenery to the scene
     def addScenery(self, obj, tex, pos, rotX, rotZ, scale):
@@ -215,20 +210,12 @@ class Movement:
         # Initial setup
         self.eye = eye
         self.speed = 0.15
-
-        # Rotations
         self.rotation_y = rotation_y
         self.rotation_z = rotation_z
-
-        # Local x axis direction
-        self.x_direction = 0
-
-        # Angles
+        self.x_direction = 0 # local x axis direction
         self.y_angle = 0 # theta
         self.z_angle = 0 # phi
-
-        # Curve
-        self.curving = False
+        self.curving = False # curve
 
     # Move the ship
     def update(self):
@@ -254,13 +241,9 @@ class Movement:
         pass
 
 # Initial setup
-controller = Controller(width=screen_width, height=screen_height)
-scene = Scene()
-camera = Camera()
-movement = Movement()
+controller, scene, camera, movement = Controller(width=screen_width, height=screen_height), Scene(), Camera(), Movement()
 control_points = [[], []] # Coordenates, angles
-prevHermiteCurve = None
-hermiteCurve = None
+prevHermiteCurve, hermiteCurve = None, None
 # smoothAngles = []
 
 # Scenario
@@ -268,7 +251,9 @@ scene.addScenery("build1_obj", "build1_tex", [10, 12, 0], np.pi/2, 0, 1.5)
 scene.addScenery("build2_obj", "build2_tex", [-7, -2, 0], np.pi/2, np.pi/2, 1.4)
 scene.addScenery("ring_obj", "ring_tex", [0, 0, 0], 0, 0, 1)
 scene.addScenery("coin_obj", "ring_tex", [0, 0, 0], 0, 0, 1)
-scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 1.6], np.pi/2, np.pi, 2)
+# scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 1.6], np.pi/2, np.pi, 2) # generan lag xd
+# scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 4.4], np.pi/2, np.pi, 2) # estan muy detallados
+# scene.addScenery("among_us_obj", "among_us_tex", [9, -1, 7.1], np.pi/2, np.pi, 2)
 
 # Camera setup
 glClearColor(0.05, 0.05, 0.1, 1.0)
@@ -279,10 +264,7 @@ glUseProgram(scene.pipeline.shaderProgram)
 @controller.event
 def on_key_press(symbol, modifiers):
     # global variables
-    global control_points
-    global prevHermiteCurve
-    global hermiteCurve
-    global n
+    global control_points, prevHermiteCurve, hermiteCurve, n
 
     # everything else
     if symbol == pyglet.window.key._1:
@@ -367,18 +349,16 @@ def on_draw():
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0)])
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0)])
     ship1, ship2, ship3 = sg.findPosition(scene.squad, "shipRotation"), sg.findPosition(scene.squad, "shipRotation2"), sg.findPosition(scene.squad, "shipRotation3")
+    scene.shipRotationShadow.transform = tr.matmul([tr.translate(ship1[0][0], ship1[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
+    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(ship2[0][0], ship2[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
+    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(ship3[0][0], ship3[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
+    scene.squad.transform = tr.matmul(ship_move+ship_rot) # Start movement of the ships
 
     # Camera in perspective
     scene.eye.transform = tr.matmul([tr.translate(-4.0, 0, 2.0)])
     scene.at.transform = tr.matmul([tr.translate(0.0, 0, 2.0)])
     scene.up.transform = tr.matmul([tr.translate(-4.0, 0, 3.0)])
     eye, up, at = sg.findPosition(scene.squad, "eye"), sg.findPosition(scene.squad, "up"), sg.findPosition(scene.squad, "at")
-
-    # Shadows
-    scene.shipRotationShadow.transform = tr.matmul([tr.translate(ship1[0][0], ship1[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
-    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(ship2[0][0], ship2[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
-    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(ship3[0][0], ship3[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
-    scene.squad.transform = tr.matmul(ship_move+ship_rot) # Start movement of the ships
 
     # Ring and coin movement
     ring = sg.findNode(scene.root, "ring_obj")
@@ -409,8 +389,7 @@ def on_draw():
             tuple(chain(*(j for j in [range(len(hermiteCurve))]))), position="f",)
         controller.node_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
         controller.joint_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
-        linePipeline["projection"] = camera.projection.reshape(16, 1, order="F")
-        linePipeline["view"] = view.reshape(16, 1, order="F")
+        linePipeline["projection"], linePipeline["view"] = camera.projection.reshape(16, 1, order="F"), view.reshape(16, 1, order="F")
         linePipeline.use()
         controller.node_data.draw(pyglet.gl.GL_POINTS)
         controller.joint_data.draw(pyglet.gl.GL_LINES)
