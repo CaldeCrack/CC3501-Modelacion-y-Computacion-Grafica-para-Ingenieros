@@ -207,7 +207,7 @@ class Camera:
 
 # Movement of the ships
 class Movement:
-    def __init__(self, eye=np.array([1.0, 1.0, 1.0]), rotation_y=0, rotation_z=0) -> None:
+    def __init__(self, eye=np.array([1.0, 1.0, 1.0]), rotation_y=0.01, rotation_z=0.01) -> None:
         # Initial setup
         self.eye = eye
         self.speed = 0.15
@@ -346,7 +346,7 @@ def on_draw():
         prev_x = hermiteCurve[controller.step][0]-hermiteCurve[(controller.step-1)%(N*(len(control_points[0])-1)-len(control_points[0]))][0]
         prev_y = hermiteCurve[controller.step][1]-hermiteCurve[(controller.step-1)%(N*(len(control_points[0])-1)-len(control_points[0]))][1]
         vector /= np.linalg.norm(vector)
-        if prev_x*vector[0] < 0 or prev_y*vector[1] < 0: movement.change = not movement.change
+        if (prev_x*vector[0] < 0 or prev_y*vector[1] < 0) and np.abs(movement.rotation_y) > 1.54: movement.change = not movement.change
         if movement.change:
             if not movement.looping: movement.rotation_x = np.pi
             movement.rotation_y = np.arcsin(-vector[2]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2]))
