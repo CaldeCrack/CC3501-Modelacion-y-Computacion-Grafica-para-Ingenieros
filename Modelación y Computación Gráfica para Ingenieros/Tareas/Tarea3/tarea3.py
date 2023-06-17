@@ -331,7 +331,8 @@ def on_mouse_motion(x, y, dx, dy):
 @controller.event
 def on_draw():
     # Step update
-    if controller.step >= N*(len(control_points[0])-1)-len(control_points[0]): controller.step = 0
+    steps = N*(len(control_points[0])-1)-len(control_points[0])
+    if controller.step >= steps: controller.step = -1
     controller.step += 1
 
     # Things
@@ -343,10 +344,11 @@ def on_draw():
     movement.update()
     if movement.curving: # curve movement
         vector = hermiteCurve[controller.step+1]-hermiteCurve[controller.step]
-        prev_x = hermiteCurve[controller.step][0]-hermiteCurve[(controller.step-1)%(N*(len(control_points[0])-1)-len(control_points[0]))][0]
-        prev_y = hermiteCurve[controller.step][1]-hermiteCurve[(controller.step-1)%(N*(len(control_points[0])-1)-len(control_points[0]))][1]
-        vector /= np.linalg.norm(vector)
-        if (prev_x*vector[0] < 0 or prev_y*vector[1] < 0) and np.abs(movement.rotation_y) > 1.54: movement.change = not movement.change
+        if controller.step-1 >= 0: prev_x = hermiteCurve[controller.step][0]-hermiteCurve[controller.step-1][0]
+        else: prev_x = hermiteCurve[controller.step+1][0]-hermiteCurve[controller.step][0]
+        # prev_y = hermiteCurve[controller.step][1]-hermiteCurve[(controller.step-1)%(N*(len(control_points[0])-1)-len(control_points[0]))][1]
+        # vector /= np.linalg.norm(vector)
+        if (prev_x*vector[0] < 0) and np.abs(movement.rotation_y) > 1.50: movement.change = not movement.change
         if movement.change:
             if not movement.looping: movement.rotation_x = np.pi
             movement.rotation_y = np.arcsin(-vector[2]/np.sqrt(vector[0]*vector[0]+vector[1]*vector[1]+vector[2]*vector[2]))
@@ -357,6 +359,11 @@ def on_draw():
         ship_move = [tr.translate(*hermiteCurve[controller.step])]
     else: # free movement
         ship_move = [tr.translate(movement.eye[0], movement.eye[1], movement.eye[2])]
+    if movement.change and controller.step == 0: # restart when beginning curve again
+        movement.rotation_x = 0
+        movement.rotation_x = np.pi
+        movement.rotation_x = 0
+        movement.change = not movement.change
     ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y), tr.rotationX(movement.rotation_x)]
     scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0)])
     scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0)])
