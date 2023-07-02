@@ -201,7 +201,7 @@ class Camera:
 
 # Movement of the ships
 class Movement:
-    def __init__(self, eye=np.array([1.0, 1.0, 1.0]), rotation_y=0.01, rotation_z=0.01) -> None:
+    def __init__(self, eye=np.array([1.0, 1.0, 1.5]), rotation_y=0.01, rotation_z=0.01) -> None:
         # Initial setup
         self.eye = eye
         self.speed = 0.15
@@ -403,7 +403,7 @@ def on_draw():
         controller.joint_data.position[:] = tuple(chain(*((p[0], p[1], p[2]) for p in hermiteCurve)))
         linePipeline["projection"], linePipeline["view"] = camera.projection.reshape(16, 1, order="F"), view.reshape(16, 1, order="F")
         linePipeline.use()
-        controller.node_data.draw(pyglet.gl.GL_POINTS)
+        # controller.node_data.draw(pyglet.gl.GL_POINTS)
         controller.joint_data.draw(pyglet.gl.GL_LINES)
 
     # Light shader
