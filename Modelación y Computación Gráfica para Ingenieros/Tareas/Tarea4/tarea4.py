@@ -35,6 +35,7 @@ ASSETS = {
     "ship_obj": getAssetPath("ship.obj"), "ship_tex": getAssetPath("ship.png"), # models and textures by me
     "ring_obj": getAssetPath("ring.obj"), "ring_tex": getAssetPath("ring.png"), # ---
     "coin_obj": getAssetPath("coin.obj"), "black_tex": getAssetPath("black.png"), # ---
+    "sphere_obj": getAssetPath("sphere.obj"), "sphere_tex": getAssetPath("sphere.png"), # ---
     "cube_obj": getAssetPath("cube.obj"), "cube_tex": getAssetPath("dirt_1.png"), # texture by Screaming Brain Studios
     "among_us_obj": getAssetPath("among_us.obj"), "among_us_tex": getAssetPath("among_us.png"), # model and texture by Vilitay
     "build1_obj": getAssetPath("build1.obj"), "build1_tex": getAssetPath("build1.png"), # models and textures by Mykhailo Ohorodnichuk
@@ -239,6 +240,7 @@ control_points = [[], []] # Coordenates, angles
 prevHermiteCurve, hermiteCurve = None, None
 
 # Scenario
+scene.addScenery("sphere_obj", "sphere_tex", [0, 0, 0], 0, 0, 30)
 scene.addScenery("build1_obj", "build1_tex", [10, 12, 0], np.pi/2, 0, 1.5)
 scene.addScenery("build2_obj", "build2_tex", [-7, -2, 0], np.pi/2, np.pi/2, 1.4)
 scene.addScenery("ring_obj", "ring_tex", [0, 0, 0], 0, 0, 1)
@@ -394,7 +396,7 @@ def on_draw():
         # controller.node_data.draw(pyglet.gl.GL_POINTS)
         controller.joint_data.draw(pyglet.gl.GL_LINES)
 
-    # Light shader
+    # Shader
     glUseProgram(scene.pipeline.shaderProgram)
     sg.drawSceneGraphNode(scene.root, scene.pipeline, "model")
 
