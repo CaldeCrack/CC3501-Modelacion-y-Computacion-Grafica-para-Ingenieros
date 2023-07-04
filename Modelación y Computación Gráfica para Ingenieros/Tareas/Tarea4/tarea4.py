@@ -116,25 +116,17 @@ class Scene:
         # Ships
         self.shipRotation = sg.SceneGraphNode("shipRotation") # Main ship
         self.shipRotation.childs += [ship_obj]
-        self.shipRotation2 = sg.SceneGraphNode("shipRotation2") # Side ships
-        self.shipRotation2.childs += [ship_obj]
-        self.shipRotation3 = sg.SceneGraphNode("shipRotation3")
-        self.shipRotation3.childs += [ship_obj]
         # Perspective camera
         self.eye = sg.SceneGraphNode("eye")
         self.at = sg.SceneGraphNode("at")
         self.up = sg.SceneGraphNode("up")
-        self.squad.childs += [self.shipRotation, self.shipRotation2, self.shipRotation3, self.eye, self.up, self.at] # Add ships
+        self.squad.childs += [self.shipRotation, self.eye, self.up, self.at] # Add ships
 
         # Shadows
         self.ship_shadows = sg.SceneGraphNode("ship_shadows")
         self.shipRotationShadow = sg.SceneGraphNode("shipRotationShadow") # Main ship
         self.shipRotationShadow.childs += [ship_shadow_obj]
-        self.shipRotationShadow2 = sg.SceneGraphNode("shipRotationShadow2") # Side ships
-        self.shipRotationShadow2.childs += [ship_shadow_obj]
-        self.shipRotationShadow3 = sg.SceneGraphNode("shipRotationShadow3")
-        self.shipRotationShadow3.childs += [ship_shadow_obj]
-        self.ship_shadows.childs += [self.shipRotationShadow, self.shipRotationShadow2, self.shipRotationShadow3] # Add shadows
+        self.ship_shadows.childs += [self.shipRotationShadow] # Add shadows
         self.root.childs += [self.ship_shadows]
 
         # --- Scenery ---
@@ -358,12 +350,8 @@ def on_draw():
         movement.rotation_x = 0
         movement.change = not movement.change
     ship_rot = [tr.rotationZ(movement.rotation_z), tr.rotationY(movement.rotation_y), tr.rotationX(movement.rotation_x)]
-    scene.shipRotation2.transform = tr.matmul([tr.translate(-2, -1, 0)])
-    scene.shipRotation3.transform = tr.matmul([tr.translate(-2, 1, 0)])
-    ship1, ship2, ship3 = sg.findPosition(scene.squad, "shipRotation"), sg.findPosition(scene.squad, "shipRotation2"), sg.findPosition(scene.squad, "shipRotation3")
+    ship1 = sg.findPosition(scene.squad, "shipRotation")
     scene.shipRotationShadow.transform = tr.matmul([tr.translate(ship1[0][0], ship1[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
-    scene.shipRotationShadow2.transform = tr.matmul([tr.translate(ship2[0][0], ship2[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
-    scene.shipRotationShadow3.transform = tr.matmul([tr.translate(ship3[0][0], ship3[1][0], 0.01)]+[tr.scale(1, 1, 0.01)]+ship_rot)
     scene.squad.transform = tr.matmul(ship_move+ship_rot) # Start movement of the ships
 
     # Camera in perspective
