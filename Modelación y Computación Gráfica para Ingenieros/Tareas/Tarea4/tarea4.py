@@ -77,15 +77,15 @@ def setLightShader(shader):
     glUniform3f(glGetUniformLocation(shader.shaderProgram, "La"), 0.8, 0.8, 0.8)
     glUniform3f(glGetUniformLocation(shader.shaderProgram, "Ld"), 0.9, 0.9, 0.9)
     glUniform3f(glGetUniformLocation(shader.shaderProgram, "Ls"), 1, 1, 1)
-    glUniform3f(glGetUniformLocation(shader.shaderProgram, "Ka"), 1, 1, 1)
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "Ka"), 0.9, 0.9, 0.9)
     glUniform3f(glGetUniformLocation(shader.shaderProgram, "Kd"), 1, 1, 1)
     glUniform3f(glGetUniformLocation(shader.shaderProgram, "Ks"), 1, 1, 1)
-    glUniform3f(glGetUniformLocation(shader.shaderProgram, "lightPosition"), 0, 0, 25)
+    glUniform3f(glGetUniformLocation(shader.shaderProgram, "lightPosition"), 0, 0, 10)
     glUniform3f(glGetUniformLocation(shader.shaderProgram, "viewPosition"), camera.eye[0], camera.eye[1], camera.eye[2])
     glUniform1ui(glGetUniformLocation(shader.shaderProgram, "shininess"), 300)
     glUniform1f(glGetUniformLocation(shader.shaderProgram, "constantAttenuation"), 0.1)
     glUniform1f(glGetUniformLocation(shader.shaderProgram, "linearAttenuation"), 0.1)
-    glUniform1f(glGetUniformLocation(shader.shaderProgram, "quadraticAttenuation"), 0.01)
+    glUniform1f(glGetUniformLocation(shader.shaderProgram, "quadraticAttenuation"), 0.1)
 
 # Controller of the pyglet window
 class Controller(pyglet.window.Window):
@@ -140,6 +140,13 @@ class Scene:
         floor.transform = tr.scale(200, 200, 1)
         floor.childs += [cube]
         self.scenario.childs += [floor]
+        # Space
+        space = sg.SceneGraphNode("sphere_obj")
+        model = createGPUShape(self.pipeline, read_OBJ2(ASSETS["sphere_obj"]))
+        model.texture = sh.textureSimpleSetup(ASSETS["sphere_tex"], *self.tex_params)
+        space.transform = tr.matmul([tr.translate(0, 0, -12), tr.uniformScale(80)])
+        space.childs += [model]
+        self.scenario.childs += [space]
 
     # Add scenery to the scene
     def addScenery(self, obj, tex, pos, rotX, rotZ, scale):
@@ -240,7 +247,6 @@ control_points = [[], []] # Coordenates, angles
 prevHermiteCurve, hermiteCurve = None, None
 
 # Scenario
-scene.addScenery("sphere_obj", "sphere_tex", [0, 0, 0], 0, 0, 30)
 scene.addScenery("build1_obj", "build1_tex", [10, 12, 0], np.pi/2, 0, 1.5)
 scene.addScenery("build2_obj", "build2_tex", [-7, -2, 0], np.pi/2, np.pi/2, 1.4)
 scene.addScenery("ring_obj", "ring_tex", [0, 0, 0], 0, 0, 1)
