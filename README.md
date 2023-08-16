@@ -1,2 +1,3 @@
 # [CC3501] Modelación y Computación Gráfica para Ingenieros
-Resolución de las tareas por Andrés Calderón (CaldeCrack).
+Render de naves moviendose en un entorno 2D.
+Proyecto de movimiento de naves en un entorno 3D, texturas, curvas de Hermite, entre otros.
